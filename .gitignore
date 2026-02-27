@@ -1,0 +1,18 @@
+# Chặn các thư mục hệ thống và môi trường
+.venv/
+data/
+.env
+**/__pycache__/
+**/.pytest_cache/
+
+# Chặn các thư mục không yêu cầu trong make_video_with_image
+make_video_with_image/ai-dev-tasks/
+make_video_with_image/output/
+make_video_with_image/tasks/
+make_video_with_image/walkthrough.md.resolved
+
+# Chặn các thư mục không yêu cầu trong vibe-voice
+vibe-voice/input/
+vibe-voice/output/
+vibe-voice/VibeVoice/
+vibe-voice/sample.txt
