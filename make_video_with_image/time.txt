@@ -1,0 +1,14 @@
+Talking_About_Your_Week_Boring_vs_Brilliant_Final_Video.mp4: Wed Feb 25 13:14:53 2026
+Talking_About_Your_Week_Boring_vs_Brilliant_podcast.mp3: Tue Feb 24 11:14:51 2026
+Talking_About_Your_Week_Boring_vs_Brilliant_Preview_Test.mp4: Wed Feb 25 13:11:35 2026
+Talking_About_Your_Week_Boring_vs_Brilliant_script.json: Tue Feb 24 10:27:31 2026
+Talking_About_Your_Week_Boring_vs_Brilliant_script.pdf: Tue Feb 24 10:27:31 2026
+Talking_About_Your_Week_Boring_vs_Brilliant_subtitles.json: Tue Feb 24 11:14:51 2026
+Talking_About_Your_Week_Boring_vs_Brilliant_whisper_cache.json: Wed Feb 25 12:28:35 2026
+The_LowStakes_Revolution_Final_Video.mp4: Fri Feb 27 11:21:40 2026
+The_LowStakes_Revolution_podcast.mp3: Fri Feb 27 11:19:02 2026
+The_LowStakes_Revolution_script.json: Fri Feb 27 11:18:31 2026
+The_LowStakes_Revolution_script.pdf: Fri Feb 27 11:18:31 2026
+The_LowStakes_Revolution_subtitles.json: Fri Feb 27 11:19:02 2026
+The_LowStakes_Revolution_whisper_cache.json: Fri Feb 27 11:13:58 2026
+The_LowStakes_Revolution_youtube_content.md: Fri Feb 27 11:21:45 2026

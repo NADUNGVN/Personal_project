@@ -8,9 +8,16 @@ from faster_whisper import WhisperModel
 
 # ================= GLOBAL CONFIGURATION =================
 INPUT_DIR = "input"
-OUTPUT_DIR = "output"
+# Read dynamic output directory if it exists, otherwise default to "output"
+CURRENT_OUT_DIR_FILE = os.path.join(INPUT_DIR, "current_output_dir.txt")
+if os.path.exists(CURRENT_OUT_DIR_FILE):
+    with open(CURRENT_OUT_DIR_FILE, "r", encoding="utf-8") as f:
+        OUTPUT_DIR = f.read().strip()
+else:
+    OUTPUT_DIR = "output"
 IMAGE_DIR = os.path.join(INPUT_DIR, "image")
 IMAGE_INPUT_PATH = os.path.join(IMAGE_DIR, "image_input.png")
+TOPICS_FILE = os.path.join(INPUT_DIR, "topics.txt")
 
 # ================= CẤU HÌNH SUBTITLE (PHỤ ĐỀ) & WHISPER =================
 SUBTITLE_FONT_SIZE = 30                # Kích thước chữ vừa vặn nhất cho không gian rộng (Tự động word-wrap nếu vượt lề)
@@ -56,17 +63,28 @@ def calculate_log_bins(fft_data, sample_rate, chunk_size, num_bins, min_fq, max_
             
     return bins
 
-def get_latest_podcast_files():
-    mp3_files = [f for f in os.listdir(OUTPUT_DIR) if f.endswith("_podcast.mp3")]
-    if not mp3_files:
-        raise FileNotFoundError("Không tìm thấy tệp MP3 nào!")
-    latest_mp3 = max(mp3_files, key=lambda x: os.path.getmtime(os.path.join(OUTPUT_DIR, x)))
-    base_name = latest_mp3.replace("_podcast.mp3", "")
-    return (
-        os.path.join(OUTPUT_DIR, latest_mp3), 
-        os.path.join(OUTPUT_DIR, f"{base_name}_subtitles.json"), 
-        base_name
-    )
+def get_target_podcast_files():
+    if not os.path.exists(TOPICS_FILE):
+        raise FileNotFoundError(f"Không tìm thấy file: {TOPICS_FILE}")
+        
+    with open(TOPICS_FILE, "r", encoding="utf-8") as f:
+        topic_name = f.read().strip()
+        
+    if not topic_name:
+        raise ValueError("Chủ đề trong topics.txt trống!")
+        
+    # Tạo safe_topic_name khớp với file được sinh ra
+    safe_topic_name = "".join([c for c in topic_name if c.isalnum() or c==' ']).rstrip().replace(" ", "_")
+    
+    mp3_path = os.path.join(OUTPUT_DIR, f"{safe_topic_name}_podcast.mp3")
+    json_path = os.path.join(OUTPUT_DIR, f"{safe_topic_name}_subtitles.json")
+    
+    if not os.path.exists(mp3_path):
+        raise FileNotFoundError(f"Không tìm thấy tệp MP3 tại: {mp3_path}")
+    if not os.path.exists(json_path):
+        raise FileNotFoundError(f"Không tìm thấy tệp JSON tại: {json_path}")
+        
+    return mp3_path, json_path, safe_topic_name
 
 def extract_word_timestamps(audio_path, subtitles):
     """Sử dụng Faster-Whisper đỉnh cao để dò tìm theo Từng Từ (Word-level timestamps) và Khớp với Text Gốc"""
@@ -215,19 +233,31 @@ def chunk_words_into_screens(words_data):
     return screens
 
 def create_video_podcast():
-    mp3_path, json_path, base_name = get_latest_podcast_files()
+    mp3_path, json_path, base_name = get_target_podcast_files()
     
     with open(json_path, 'r', encoding='utf-8') as f:
         subtitles = json.load(f)
         
     # 1. Ứng dụng WHISPER lấy Timestamp chuẩn xác từng Miliseconds
-    # (Để tăng tốc, cache nó lại nếu đã có)
+    # (Để tăng tốc, cache nó lại nếu đã có, NHƯNG phải kiểm tra xem MP3 có mới hơn Cache không)
     whisper_cache = os.path.join(OUTPUT_DIR, f"{base_name}_whisper_cache.json")
+    
+    use_cache = False
     if os.path.exists(whisper_cache):
-        print(f"Tìm thấy Whisper cache, tải lên cho lẹ: {whisper_cache}")
+        cache_mtime = os.path.getmtime(whisper_cache)
+        mp3_mtime = os.path.getmtime(mp3_path)
+        if cache_mtime > mp3_mtime:
+            use_cache = True
+            
+    if use_cache:
+        print(f"Tìm thấy Whisper cache (hợp lệ), tải lên cho lẹ: {whisper_cache}")
         with open(whisper_cache, 'r', encoding='utf-8') as f:
             words_data = json.load(f)
     else:
+        if os.path.exists(whisper_cache):
+            print("Whisper cache đã cũ so với file MP3. Đang tạo lại...")
+        else:
+            print("Không tìm thấy Whisper cache. Đang nội suy Whisper mới...")
         words_data = extract_word_timestamps(mp3_path, subtitles)
         with open(whisper_cache, 'w', encoding='utf-8') as f:
             json.dump(words_data, f, ensure_ascii=False, indent=2)

@@ -14,11 +14,20 @@ from pydub.silence import detect_leading_silence
 ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
 AudioSegment.converter = ffmpeg_exe
 
-# ================= GLOBAL CONFIGURATION =================
+# ================= GLOBAL CONFIGURATION# Define directories
 INPUT_DIR = "input"
-OUTPUT_DIR = "output"
-DATA_DIR = r"d:\work\Personal_project\data"
-TMP_AUDIO_DIR = "tmp_audio"
+DATA_DIR = r"d:\work\Personal_project\data" # Keep DATA_DIR as it's used later
+
+# Read dynamic output directory if it exists, otherwise default to "output"
+CURRENT_OUT_DIR_FILE = os.path.join(INPUT_DIR, "current_output_dir.txt")
+if os.path.exists(CURRENT_OUT_DIR_FILE):
+    with open(CURRENT_OUT_DIR_FILE, "r", encoding="utf-8") as f:
+        OUTPUT_DIR = f.read().strip()
+else:
+    OUTPUT_DIR = "output"
+
+TMP_AUDIO_DIR = os.path.join(OUTPUT_DIR, "tmp_kokoro") # Changed to be relative to OUTPUT_DIR
+CURRENT_PDF_FILE = os.path.join(INPUT_DIR, "current_pdf.txt")
 TOPICS_FILE = os.path.join(INPUT_DIR, "topics.txt")
 DATASET_CSV = os.path.join(DATA_DIR, "dataset_metadata.csv")
 # ========================================================
@@ -27,14 +36,22 @@ from kokoro import KPipeline
 
 # ================= VOICE CONFIGURATION =================
 VOICE_MAP = {
-    "Alex": "am_puck",  # American Male Voice
-    "Sarah": "af_bella" # American Female Voice
+    "Alex": "am_puck",      # Host 1
+    "Sarah": "af_bella",    # Host 2
+    "Michael": "am_michael",# Roleplay Male 1
+    "Nicole": "af_nicole",  # Roleplay Female 1
+    "Adam": "am_adam",      # Roleplay Male 2
+    "Sky": "af_sky"         # Roleplay Female 2
 }
 SPEED_MAP = {
-    "Alex": 1.0,   # Normal speed
-    "Sarah": 0.85  # Slower speed for Sarah
+    "Alex": 1.0,
+    "Sarah": 0.85,
+    "Michael": 1.0,
+    "Nicole": 1.0,
+    "Adam": 1.0,
+    "Sky": 1.0
 }
-# Fallback voice if speaker not in map
+# Fallback voice if speaker not in map (should not happen with new prompt constraints)
 DEFAULT_VOICE = "af_sky"
 LANG_CODE = 'a' # 'a' for American English
 # =======================================================
@@ -103,7 +120,7 @@ def process_topic_tts(topic: str, pipeline: KPipeline):
         shutil.rmtree(TMP_AUDIO_DIR)
     os.makedirs(TMP_AUDIO_DIR, exist_ok=True)
 
-    dialogues = [item for item in script if item.get("type", "") == "dialogue"]
+    dialogues = [item for item in script if item.get("type", "") in ["dialogue", "heading"]]
     total_turns = len(dialogues)
     
     subtitles = []
@@ -113,10 +130,36 @@ def process_topic_tts(topic: str, pipeline: KPipeline):
     print(f"Found {total_turns} dialogue turns to process.")
     
     for idx, item in enumerate(dialogues, start=1):
+        item_type = item.get("type", "dialogue")
         speaker = item.get("speaker", "Unknown")
         # Phân tách 2 luồng text dựa trên JSON mới
         text_display = item.get("text_display", item.get("text", ""))
         text_tts = item.get("text_tts", text_display)
+        
+        turn_audio = AudioSegment.empty()
+        turn_phonemes = []
+        has_audio = False
+        duration_ms = 0
+        voice = None
+        
+        # BỎ QUA TẠO AUDIO NẾU LÀ HEADING ĐẦU TIÊN (Intro) HOẶC KHÔNG CÓ THOẠI
+        if item_type == "heading" and (idx == 1 or not text_tts or speaker == "Unknown" or speaker == ""):
+            print(f"  [{idx}/{total_turns}] Skipping audio generation for silent heading: '{text_display}'")
+            # Vẫn ghi timestamp nhưng không cộng thời gian
+            subtitles.append({
+                "idx": idx,
+                "type": item_type,
+                "speaker": speaker,
+                "text": text_display,
+                "text_tts": text_tts,
+                "phonemes": "",
+                "start_time_sec": current_time_ms / 1000.0,
+                "end_time_sec": current_time_ms / 1000.0,
+                "duration_sec": 0,
+                "voice_used": "None"
+            })
+            continue
+
         voice = get_voice_for_speaker(speaker)
         
         # Get custom speed (default to 1.0 if not in map, e.g. for fallback voices)
@@ -124,11 +167,7 @@ def process_topic_tts(topic: str, pipeline: KPipeline):
         
         # 1. GENERATE WAV VIA KOKORO
         # Sử dụng text_tts (đã có đánh dấu trọng âm, nhịp độ) để render
-        generator = pipeline(text_tts, voice=voice, speed=speed, split_pattern=r'\n+')
-        
-        turn_audio = AudioSegment.empty()
-        has_audio = False
-        turn_phonemes = []  # Lưu lại token phát âm của Kokoro
+        generator = pipeline(text_tts, voice=voice, speed=speed, split_pattern=r'\\n+')
         
         for i, (gs, ps, audio_data) in enumerate(generator):
             if audio_data is not None:
@@ -164,8 +203,9 @@ def process_topic_tts(topic: str, pipeline: KPipeline):
         if trim_start < end_idx:
             turn_audio = turn_audio[trim_start:end_idx]
             
-        # Thêm 1 khoảng thở ổn định 100ms vào cuối câu để 2 người không bị cướp lời (overlapping) quá nhanh
-        turn_audio += AudioSegment.silent(duration=100)
+        # Thêm khoảng nghỉ: 300ms cho heading, 100ms cho dialogue
+        pause_duration = 300 if item_type == "heading" else 100
+        turn_audio += AudioSegment.silent(duration=pause_duration)
         # ----------------------------------------------------------------
         
         # --- BƯỚC MỚI: LƯU TRỮ AUDIO (VÀ TEXT DỮ LIỆU HUẤN LUYỆN) RIÊNG LẺ MỖI LẦN NÓI ---
@@ -204,6 +244,7 @@ def process_topic_tts(topic: str, pipeline: KPipeline):
         
         subtitles.append({
             "idx": idx,
+            "type": item_type,
             "speaker": speaker,
             "text": text_display,
             "text_tts": text_tts,
@@ -242,22 +283,25 @@ def process_topic_tts(topic: str, pipeline: KPipeline):
 def main():
     setup_directories()
     
-    with open(TOPICS_FILE, "r", encoding="utf-8") as f:
-        topics = [line.strip() for line in f.readlines() if line.strip()]
+    if not os.path.exists(TOPICS_FILE):
+        print("No topics.txt found. Run make_youtube_video.py first.")
+        sys.exit(1)
 
-    if not topics:
-        print("No topics found in input/topics.txt.")
-        sys.exit(0)
+    with open(TOPICS_FILE, "r", encoding="utf-8") as f:
+        topic_name = f.read().strip()
+
+    if not topic_name:
+        print("Topic is empty.")
+        sys.exit(1)
 
     print("Initializing Kokoro TTS Pipeline... (this may take a moment)")
     # 'a' = American models
     pipeline = KPipeline(lang_code=LANG_CODE)
     
-    for topic in topics:
-        process_topic_tts(topic, pipeline)
+    process_topic_tts(topic_name, pipeline)
         
     cleanup_tmp_audio()
-    print("\nAll topics processed successfully via Kokoro TTS!")
+    print("\nTopic processed successfully via Kokoro TTS!")
 
 if __name__ == "__main__":
     main()
