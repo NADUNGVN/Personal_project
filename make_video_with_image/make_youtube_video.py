@@ -8,11 +8,10 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv(dotenv_path=r"d:\work\Personal_project\.env")
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env"))
 # --- CONFIGURATION ---
 INPUT_DIR = "input"
 TOPICS_FILE = os.path.join(INPUT_DIR, "topics.txt")
-CURRENT_PDF_FILE = os.path.join(INPUT_DIR, "current_pdf.txt")
 
 # Read dynamic output directory if it exists, otherwise default to "output"
 CURRENT_OUT_DIR_FILE = os.path.join(INPUT_DIR, "current_output_dir.txt")
@@ -240,21 +239,8 @@ def main():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     parser = argparse.ArgumentParser(description="YouTube Video Production Pipeline")
-    parser.add_argument("--pdf", type=str, help="Path to the PDF file for the podcast template")
     parser.add_argument("--topic", type=str, help="Topic for the video/podcast")
     args = parser.parse_args()
-
-    pdf_path = args.pdf
-    if not pdf_path:
-        pdf_path = input("Nhập đường dẫn file PDF (Làm mẫu cấu trúc): ").strip()
-
-    if not pdf_path:
-        print("Đường dẫn file PDF không được để trống!")
-        sys.exit(1)
-        
-    if not os.path.exists(pdf_path):
-        print(f"Không tìm thấy file PDF tại: {pdf_path}")
-        sys.exit(1)
 
     topic = args.topic
     if not topic:
@@ -266,13 +252,10 @@ def main():
 
     os.makedirs(INPUT_DIR, exist_ok=True)
 
-    with open(CURRENT_PDF_FILE, "w", encoding="utf-8") as f:
-        f.write(os.path.abspath(pdf_path) + "\n")
-        
     with open(TOPICS_FILE, "w", encoding="utf-8") as f:
         f.write(topic + "\n")
 
-    # --- BƯỚC MỚI: TẠO THƯ MỤC OUTPUT ĐỘNG THEO NGÀY VÀ CHỦ ĐỀ ---
+    # --- TẠO THƯ MỤC OUTPUT ĐỘNG THEO NGÀY VÀ CHỦ ĐỀ ---
     from datetime import datetime
     date_str = datetime.now().strftime("%d_%m_%Y")
     safe_topic_name = "".join([c for c in topic if c.isalnum() or c == ' ']).rstrip().replace(" ", "_")
@@ -289,12 +272,11 @@ def main():
 
     total = len(PIPELINE_STEPS) + 1
 
-    print(f"\\n{'='*50}")
+    print(f"\n{'='*50}")
     print(f"  🎬  YOUTUBE VIDEO PIPELINE")
-    print(f"  📄  PDF Mẫu: {os.path.basename(pdf_path)}")
     print(f"  📌  Chủ đề: {topic}")
     print(f"  📂  Thư mục lưu: {dynamic_out_dir}/")
-    print(f"{'='*50}\\n")
+    print(f"{'='*50}\n")
 
     for i, step in enumerate(PIPELINE_STEPS, start=1):
         run_step(step["script"], step["label"], step["icon"], i, total)
@@ -304,9 +286,9 @@ def main():
     generate_youtube_metadata(topic, safe_topic_name)
     spinner.stop(success=True)
 
-    print(f"\\n{'='*50}")
+    print(f"\n{'='*50}")
     print(f"  🎉  HOÀN TẤT! Output trong thư mục: {OUTPUT_DIR}/")
-    print(f"{'='*50}\\n")
+    print(f"{'='*50}\n")
 
 if __name__ == "__main__":
     main()
