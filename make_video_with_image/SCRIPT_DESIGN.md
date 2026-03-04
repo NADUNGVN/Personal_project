@@ -49,9 +49,20 @@ Speaker: Nội dung dialogue...
 
 ### Quy Tắc Heading (Áp dụng cho tất cả segment)
 
-- `text_display` của heading **TỐI ĐA 8 từ** — đây là tiêu đề chương trong PDF, không phải câu nói.
-- `text_tts` chứa câu dẫn chuyển ngắn của host (được phát âm).
-- Nếu host cần giới thiệu dài (vd: giới thiệu roleplay sắp tới), đặt heading TRƯỚC (tiêu đề ngắn), rồi thêm **dialogue riêng biệt** ngay sau heading chứa lời giới thiệu đầy đủ.
+Mỗi heading item có 4 field quan trọng:
+
+| Field | Mục đích | Nội dung |
+|-------|---------|----------|
+| `title` | **PDF ebook** (tiêu đề chương) | Ngắn gọn, tối đa 8 từ |
+| `text_display` | **Karaoke video** (chữ chạy trên màn hình) | Câu dẫn chuyển đầy đủ của host |
+| `text_tts` | **Kokoro TTS** (âm thanh) | Câu dẫn chuyển + markup nhấn giọng |
+| `speaker` | Host nói | `"Alex"` hoặc `"Sarah"` |
+
+**NGOẠI LỆ — Heading MỨT ÂM (Intro & Outro):**
+- `speaker=""`, `text_tts=""`, `text_display` = same as `title`
+- Không phát âm, không hiện karaoke
+- Chỉ xuất hiện trong PDF
+- Dialogue tiếp theo bắt đầu nói trực tiếp
 
 ### 2. Topic Introduction
 | Thuộc tính | Giá trị |
@@ -115,7 +126,7 @@ Speaker: Nội dung dialogue...
 | Speaker | Alex + Sarah |
 | Mục tiêu | Cảm ơn, CTA subscribe/like, tạm biệt |
 | Số lượt thoại | ~4–6 |
-| Quy tắc | Kết thúc ấm áp, mời comment chủ đề tiếp theo |
+| Quy tắc | Heading MỨT ÂM (speaker="", text_tts=""). Alex PHẢI nói đầu tiên trong phần dialogue. Không lặp lại nội dung Recap |
 
 ---
 
@@ -123,20 +134,21 @@ Speaker: Nội dung dialogue...
 
 ```json
 {
-  "segment_id": 1,
-  "segment_name": "Intro",
+  "segment_id": 2,
+  "segment_name": "Topic Introduction",
   "script": [
     {
       "type": "heading",
-      "speaker": "",
-      "text_display": "Welcome to English Podcast Everyday",
-      "text_tts": ""
+      "speaker": "Alex",
+      "title": "Understanding Healthy Habits",
+      "text_display": "Alright, so today we're diving into something really exciting: healthy habits!",
+      "text_tts": "[Alright](+2), so today we're diving into something [really](+2) exciting: [healthy habits](+2)!"
     },
     {
       "type": "dialogue",
-      "speaker": "Alex",
-      "text_display": "Hello everyone, and welcome back...",
-      "text_tts": "[Hello](+2) everyone, and [welcome](+2) back..."
+      "speaker": "Sarah",
+      "text_display": "Oh, I love this topic!",
+      "text_tts": "Oh, I [love](+2) this topic!"
     }
   ]
 }
@@ -181,21 +193,16 @@ LLM phải trả về **strictly valid JSON** (không markdown wrapper) theo for
   "script": [
     {
       "type": "heading",
-      "speaker": "Alex",
-      "text_display": "Audio Conversation #1: Weekend Plans",
-      "text_tts": "[Alright](-1)... now let's listen to a conversation between Michael and Nicole about their [weekend](+2) plans."
+      "speaker": "Sarah",
+      "title": "Audio Conversation #1: Weekend Plans",
+      "text_display": "Alright everyone, now let's hear a real conversation! Listen closely for those key phrases. Here's a chat between Michael and Nicole!",
+      "text_tts": "[Alright](+2) everyone, now let's hear a [real](+2) conversation! [Listen closely](+2) for those key phrases. Here's a chat between Michael and Nicole!"
     },
     {
       "type": "dialogue",
       "speaker": "Michael",
       "text_display": "Hey Nicole! Do you have any plans for the weekend?",
       "text_tts": "[Hey](+2) Nicole! Do you have any plans... for the [weekend](+2)?"
-    },
-    {
-      "type": "dialogue",
-      "speaker": "Nicole",
-      "text_display": "Hi Michael! Actually, I've been meaning to check out that new café downtown.",
-      "text_tts": "Hi Michael! [Actually](-1), I've been [meaning](+2) to check out that new café... downtown."
     }
   ]
 }
@@ -206,8 +213,9 @@ LLM phải trả về **strictly valid JSON** (không markdown wrapper) theo for
 | Field | Type | Mô tả | Bắt buộc |
 |-------|------|--------|----------|
 | `type` | `"heading"` \| `"dialogue"` | Heading = tiêu đề phân đoạn. Dialogue = lượt thoại | ✅ |
-| `speaker` | string | Tên nhân vật. **PHẢI** nằm trong: `Alex`, `Sarah`, `Michael`, `Nicole`, `Adam`, `Sky`, hoặc `""` (chỉ cho Intro heading) | ✅ |
-| `text_display` | string | Văn bản **sạch**, chuẩn ngữ pháp. Dùng để: hiện trên video (karaoke), in PDF ebook, tạo YouTube description | ✅ |
+| `speaker` | string | Tên nhân vật. `""` cho Intro/Outro heading (mute) | ✅ |
+| `title` | string | Tiêu đề ngắn cho PDF (max 8 từ). **Chỉ heading** | ✅ (heading) |
+| `text_display` | string | **Heading**: câu dẫn đầy đủ (hiện karaoke). **Dialogue**: nội dung thoại | ✅ |
 | `text_tts` | string | Văn bản **đạo diễn** cho Kokoro TTS. Chứa markup điều khiển giọng đọc | ✅ |
 
 ### TTS Markup trong `text_tts`
@@ -226,8 +234,9 @@ LLM phải trả về **strictly valid JSON** (không markdown wrapper) theo for
 
 | Trường hợp | `speaker` | `text_tts` | Hành vi Kokoro |
 |-----------|-----------|------------|----------------|
-| **Intro heading** (segment 1, item đầu tiên) | `""` (rỗng) | `""` (rỗng) | ❌ KHÔNG phát âm. Chỉ ghi timestamp `0:00` |
-| **Mọi heading khác** (segment 2–9) | Tên host (thường `"Alex"`) | Câu dẫn chuyển tự nhiên | ✅ Phát âm bình thường, thêm 300ms pause sau |
+| **Intro heading** (segment 1) | `""` (rỗng) | `""` (rỗng) | ❌ KHÔNG phát âm. Chỉ ghi timestamp |
+| **Outro heading** (segment 9) | `""` (rỗng) | `""` (rỗng) | ❌ KHÔNG phát âm. Chỉ ghi timestamp |
+| **Heading thường** (segment 2–8) | Tên host | Câu dẫn chuyển đầy đủ | ✅ Phát âm bình thường |
 
 ---
 
@@ -240,7 +249,7 @@ File `{topic}_script.json` (merged) → class `PDF(FPDF)` → `{topic}_script.pd
 │ JSON Script Array                                   │
 │                                                     │
 │  item.type == "heading"                             │
-│  ├── Đọc: item["text_display"]                     │
+│  ├── Đọc: item["title"] ← tiêu đề ngắn cho PDF    │
 │  ├── Font: Helvetica Bold 16pt                     │
 │  ├── Nền: Xanh nhạt (#F0F5FA)                     │
 │  └── Chữ: Xanh đậm (#143264)                      │
@@ -252,7 +261,7 @@ File `{topic}_script.json` (merged) → class `PDF(FPDF)` → `{topic}_script.pd
 │  └── Chữ: Xám đậm (#2D2D2D)                      │
 │                                                     │
 │  ⚠️ KHÔNG dùng text_tts cho PDF                    │
-│  ⚠️ Chỉ dùng text_display (văn bản sạch)          │
+│  ⚠️ Heading dùng "title", Dialogue dùng "text_display" │
 └─────────────────────────────────────────────────────┘
 ```
 

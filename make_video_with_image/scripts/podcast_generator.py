@@ -22,7 +22,8 @@ client = OpenAI(
 )
 
 # --- CONFIGURATION ---
-INPUT_DIR = "input"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+INPUT_DIR = os.path.join(BASE_DIR, "input")
 TOPICS_FILE = os.path.join(INPUT_DIR, "topics.txt")
 
 # Read dynamic output directory if it exists, otherwise default to "output"
@@ -31,7 +32,7 @@ if os.path.exists(CURRENT_OUT_DIR_FILE):
     with open(CURRENT_OUT_DIR_FILE, "r", encoding="utf-8") as f:
         OUTPUT_DIR = f.read().strip()
 else:
-    OUTPUT_DIR = "output"
+    OUTPUT_DIR = os.path.join(BASE_DIR, "output")
     
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(INPUT_DIR, exist_ok=True)
@@ -336,299 +337,7 @@ OUTPUT FORMAT:
   "segment_name": "Outro",
   "script": [
     {{"type": "heading", "speaker": "", "title": "Outro", "text_display": "Outro", "text_tts": ""}},
-    {{"type": "heading", "speaker": "", "text_display": "Outro", "text_tts": ""}},
     {{"type": "dialogue", "speaker": "Alex", "text_display": "Well, that brings us to the end of today's episode!", "text_tts": "Well, that brings us to the [end](+2) of today's episode!"}}
-  ]
-}}"""
-    },
-]
-SYSTEM_PROMPT = """You are an expert scriptwriter for a professional ESL podcast called "English Podcast Everyday".
-You write highly engaging, natural-sounding scripts for intermediate-to-advanced English learners.
-
-Hosts: Alex (Male, analytical, explains grammar and vocabulary) and Sarah (Female, enthusiastic, provides vivid examples and encouragement).
-
-VOICE CASTING FOR ROLEPLAYS:
-When creating roleplay characters, you MUST ONLY use these names (our TTS engine requires them):
-- "Michael" (Male Adult)
-- "Nicole" (Female Adult)
-- "Adam" (Male Adult)
-- "Sky" (Female Adult)
-DO NOT invent other names.
-
-CRITICAL OUTPUT RULES:
-1. Output ONLY valid JSON. No markdown, no extra text.
-2. ESCAPE all quotes inside strings (e.g., "Then he said \\"hello\\" to me").
-3. For EVERY item, generate BOTH fields:
-   - `text_display`: Clean, grammatically correct text for on-screen display and PDF.
-   - `text_tts`: Text with TTS directing markup for natural Kokoro speech:
-     * Use `[word](+2)` to EMPHASIZE key words (spoken louder/slower)
-     * Use `[word](-1)` to DE-STRESS filler words (spoken lighter/faster): [just](-1), [like](-1), [oh](-1)
-     * Use commas `,`, ellipses `...`, dashes `—` for natural pacing/pauses
-     * Use `!` for excitement, `?` for rising intonation
-
-CRITICAL HEADING RULES:
-- A heading item (type="heading") is a CHAPTER TITLE that appears in the PDF ebook.
-- `text_display` for headings MUST be SHORT (maximum 8 words). It is a title, NOT a sentence. Examples: "Audio Conversation #1: Weekend Plans", "Analysis & Vocabulary Breakdown", "Episode Recap".
-- `text_tts` for headings is the HOST's spoken transition phrase (can be a full sentence).
-- If a host needs to give a longer introduction (e.g., introducing a conversation), put the heading FIRST (short title), then add a SEPARATE dialogue item right after it with the full introduction speech.
-
-You are a helpful assistant that only outputs strictly valid JSON objects without markdown."""
-# ==============================================================================
-
-# ================= SEGMENT DEFINITIONS =================
-SEGMENTS = [
-    {
-        "id": 1,
-        "name": "Intro",
-        "prompt_template": """Write Segment 1: INTRO for the podcast about "{topic}".
-
-RULES:
-- The FIRST item MUST be a heading with type="heading", speaker="" (empty), text_tts="" (empty). This heading is MUTED (no audio).
-- The SECOND item MUST be a dialogue from Alex. He opens the show.
-- Write a warm, fun, short welcoming exchange between Alex and Sarah (~6-8 dialogue turns).
-- They greet the audience, encourage subscribing, and naturally tease today's topic "{topic}".
-- Keep it conversational and upbeat, like two best friends hosting together.
-
-OUTPUT FORMAT:
-{{
-  "segment_id": 1,
-  "segment_name": "Intro",
-  "script": [
-    {{"type": "heading", "speaker": "", "text_display": "Creative Intro Title", "text_tts": ""}},
-    {{"type": "dialogue", "speaker": "Alex", "text_display": "Hello everyone...", "text_tts": "[Hello](+2) everyone..."}}
-  ]
-}}"""
-    },
-    {
-        "id": 2,
-        "name": "Topic Introduction",
-        "prompt_template": """Write Segment 2: TOPIC INTRODUCTION for the podcast about "{topic}".
-
-PREVIOUS SCRIPT SO FAR:
----
-{context}
----
-
-RULES:
-- Start with a SHORT heading (type="heading", speaker="Alex", text_display max 8 words).
-- Alex and Sarah introduce today's topic "{topic}" in depth.
-- They explain WHY this topic matters for English learners.
-- Teach 3-4 key vocabulary words/phrases/idioms related to "{topic}". Explain each with examples and natural usage.
-- Make explanations come alive with personal anecdotes and humor, NOT dry dictionary definitions.
-- ~10-15 dialogue turns.
-
-OUTPUT FORMAT:
-{{
-  "segment_id": 2,
-  "segment_name": "Topic Introduction",
-  "script": [
-    {{"type": "heading", "speaker": "Alex", "text_display": "What Are Healthy Habits?", "text_tts": "Alright, let's [dive right in](+2) to today's topic!"}},
-    {{"type": "dialogue", "speaker": "Alex", "text_display": "...", "text_tts": "..."}}
-  ]
-}}"""
-    },
-    {
-        "id": 3,
-        "name": "Audio Conversation #1",
-        "prompt_template": """Write Segment 3: AUDIO CONVERSATION #1 for the podcast about "{topic}".
-
-PREVIOUS SCRIPT SO FAR:
----
-{context}
----
-
-RULES:
-- Start with a SHORT heading (type="heading", speaker="Sarah", text_display max 8 words like "Audio Conversation #1: Wellness Goals").
-- Right after the heading, add a SEPARATE dialogue item from Sarah with her full spoken introduction (e.g., introducing the characters and what to listen for).
-- Then write a LONG, hyper-realistic roleplay conversation (~15-20 dialogue turns) between two characters.
-- Choose characters from: Michael, Nicole, Adam, Sky (pick any two, or use Alex and Sarah themselves if it fits better).
-- The conversation must NATURALLY incorporate the vocabulary and phrases taught in the previous segment.
-- One character should speak at B1 level (simpler sentences, occasional mistakes), the other at B2+ level (phrasal verbs, idioms, complex structures).
-- Make the conversation feel like a real everyday interaction, with fillers, reactions, and natural flow.
-
-OUTPUT FORMAT:
-{{
-  "segment_id": 3,
-  "segment_name": "Audio Conversation #1: [Creative Subtitle]",
-  "script": [
-    {{"type": "heading", "speaker": "Sarah", "text_display": "Audio Conversation #1: Weekend Plans", "text_tts": "[Alright](-1)... now let's hear a conversation!"}},
-    {{"type": "dialogue", "speaker": "Sarah", "text_display": "Listen closely for those key phrases we just learned. Here's a chat between Michael and Nicole!", "text_tts": "[Listen closely](+2) for those key phrases we [just](-1) learned. Here's a chat between Michael and Nicole!"}},
-    {{"type": "dialogue", "speaker": "Michael", "text_display": "Hey Nicole! ...", "text_tts": "[Hey](+2) Nicole! ..."}}
-  ]
-}}"""
-    },
-    {
-        "id": 4,
-        "name": "Analysis & Vocabulary Breakdown",
-        "prompt_template": """Write Segment 4: ANALYSIS & VOCABULARY BREAKDOWN for the podcast about "{topic}".
-
-PREVIOUS SCRIPT SO FAR:
----
-{context}
----
-
-RULES:
-- Start with a SHORT heading (type="heading", speaker="Alex", text_display max 8 words like "Analysis & Vocabulary Breakdown").
-- Alex and Sarah analyze Audio Conversation #1 that just played.
-- Reference SPECIFIC lines/phrases from the conversation (e.g., "Did you catch when Michael said '...'?").
-- Break down phrasal verbs, idioms, and useful expressions used in the conversation.
-- Explain B1 vs B2 differences they noticed.
-- Give alternative ways to express the same ideas.
-- ~8-12 dialogue turns.
-
-OUTPUT FORMAT:
-{{
-  "segment_id": 4,
-  "segment_name": "Analysis & Vocabulary Breakdown",
-  "script": [
-    {{"type": "heading", "speaker": "Alex", "text_display": "Analysis & Vocabulary Breakdown", "text_tts": "[Alright](+2) everyone, let's [break down](+2) that conversation."}},
-    {{"type": "dialogue", "speaker": "Alex", "text_display": "...", "text_tts": "..."}}
-  ]
-}}"""
-    },
-    {
-        "id": 5,
-        "name": "Topic Part 2",
-        "prompt_template": """Write Segment 5: TOPIC PART 2 for the podcast about "{topic}".
-
-PREVIOUS SCRIPT SO FAR:
----
-{context}
----
-
-RULES:
-- Start with a SHORT heading (type="heading", speaker="Sarah", text_display max 8 words).
-- Pivot to a DIFFERENT angle or sub-topic within "{topic}" that hasn't been covered yet.
-- Teach 3-4 NEW vocabulary words/phrases (DO NOT repeat vocabulary from earlier segments).
-- Include common mistakes that learners make when discussing this aspect.
-- Show correct vs incorrect usage with clear examples.
-- ~10-12 dialogue turns.
-
-OUTPUT FORMAT:
-{{
-  "segment_id": 5,
-  "segment_name": "Topic Part 2: [Creative Subtitle]",
-  "script": [
-    {{"type": "heading", "speaker": "Sarah", "text_display": "Environment & Social Influence", "text_tts": "Now let's look at another [important](+2) side of this topic!"}},
-    {{"type": "dialogue", "speaker": "Sarah", "text_display": "...", "text_tts": "..."}}
-  ]
-}}"""
-    },
-    {
-        "id": 6,
-        "name": "Audio Conversation #2",
-        "prompt_template": """Write Segment 6: AUDIO CONVERSATION #2 for the podcast about "{topic}".
-
-PREVIOUS SCRIPT SO FAR:
----
-{context}
----
-
-RULES:
-- Start with a SHORT heading (type="heading", speaker="Alex", text_display max 8 words like "Audio Conversation #2: Fitness Journey").
-- Right after the heading, add a SEPARATE dialogue item from Alex with his full spoken introduction.
-- Write another LONG, realistic roleplay (~15-20 dialogue turns).
-- Use a DIFFERENT pair of characters than Audio #1 (choose from: Michael, Nicole, Adam, Sky, Alex, Sarah).
-- This conversation should incorporate the NEW vocabulary from Topic Part 2.
-- Again, one speaker at B1 level, the other at B2+ level.
-- Different scenario/setting from Audio #1 to keep things fresh.
-
-OUTPUT FORMAT:
-{{
-  "segment_id": 6,
-  "segment_name": "Audio Conversation #2: [Creative Subtitle]",
-  "script": [
-    {{"type": "heading", "speaker": "Alex", "text_display": "Audio Conversation #2: Fitness Journey", "text_tts": "Now let's hear another [great](+2) conversation!"}},
-    {{"type": "dialogue", "speaker": "Alex", "text_display": "This time, we have Adam and Sky discussing their fitness routines. Listen for those new phrases!", "text_tts": "This time, we have Adam and Sky discussing their [fitness](+2) routines. Listen for those new phrases!"}},
-    {{"type": "dialogue", "speaker": "Adam", "text_display": "Hey Sky! ...", "text_tts": "[Hey](+2) Sky! ..."}}
-  ]
-}}"""
-    },
-    {
-        "id": 7,
-        "name": "Analysis & Level Comparison",
-        "prompt_template": """Write Segment 7: ANALYSIS & LEVEL COMPARISON for the podcast about "{topic}".
-
-PREVIOUS SCRIPT SO FAR:
----
-{context}
----
-
-RULES:
-- Start with a SHORT heading (type="heading", speaker="Sarah", text_display max 8 words like "Analysis & Level Comparison").
-- Alex and Sarah dissect Audio Conversation #2.
-- FOCUS on B1 vs B2 level comparison: point out specific phrases where one speaker used simpler language and the other used more advanced expressions.
-- Highlight hedging language, softeners, idioms, and natural speech patterns from the B2 speaker.
-- Point out common B1 errors (dropped articles, wrong prepositions, etc.) and how to fix them.
-- ~8-12 dialogue turns.
-
-OUTPUT FORMAT:
-{{
-  "segment_id": 7,
-  "segment_name": "Analysis & Level Comparison",
-  "script": [
-    {{"type": "heading", "speaker": "Sarah", "text_display": "Analysis & Level Comparison", "text_tts": "[Great](+2) conversation! Now let's [break it down](+2)."}},
-    {{"type": "dialogue", "speaker": "Alex", "text_display": "...", "text_tts": "..."}}
-  ]
-}}"""
-    },
-    {
-        "id": 8,
-        "name": "Episode Recap",
-        "prompt_template": """Write Segment 8: EPISODE RECAP for the podcast about "{topic}".
-
-PREVIOUS SCRIPT SO FAR:
----
-{context}
----
-
-RULES:
-- Start with a SHORT heading (type="heading", speaker="Alex", text_display="Episode Recap").
-- Alex and Sarah do a lightning-fast recap of EVERYTHING covered in this episode.
-- Mention ALL key vocabulary, phrases, and grammar points taught throughout.
-- Reference both audio conversations briefly.
-- Give the listener a clear summary of what they should have learned.
-- Keep it energetic and encouraging.
-- ~6-8 dialogue turns.
-- IMPORTANT: This segment is ONLY the recap. Do NOT include goodbye, thank you, CTA, or sign-off. Those belong in Segment 9 (Outro).
-
-OUTPUT FORMAT:
-{{
-  "segment_id": 8,
-  "segment_name": "Episode Recap",
-  "script": [
-    {{"type": "heading", "speaker": "Alex", "text_display": "Episode Recap", "text_tts": "Alright, let's do a [quick recap](+2) of everything we covered today!"}},
-    {{"type": "dialogue", "speaker": "Alex", "text_display": "So today we covered...", "text_tts": "So today we covered..."}}
-  ]
-}}"""
-    },
-    {
-        "id": 9,
-        "name": "Outro",
-        "prompt_template": """Write Segment 9: OUTRO for the podcast about "{topic}".
-
-PREVIOUS SCRIPT SO FAR:
----
-{context}
----
-
-RULES:
-- Start with a SHORT heading (type="heading", speaker="Sarah", text_display="Outro").
-- IMPORTANT: This segment is ONLY the sign-off. Do NOT recap vocabulary or repeat content from Segment 8.
-- Warm, friendly goodbye from both Alex and Sarah.
-- Thank listeners for tuning in.
-- CTA: subscribe, like, leave a comment with topic suggestions.
-- Encourage them to keep practicing English.
-- End on a positive, uplifting note.
-- ~4-6 dialogue turns. Keep it short and sweet.
-
-OUTPUT FORMAT:
-{{
-  "segment_id": 9,
-  "segment_name": "Outro",
-  "script": [
-    {{"type": "heading", "speaker": "Sarah", "text_display": "Outro", "text_tts": "Well, that brings us to the [end](+2) of today's episode!"}},
-    {{"type": "dialogue", "speaker": "Sarah", "text_display": "Thanks so much for listening...", "text_tts": "[Thanks](+2) so much for listening..."}}
   ]
 }}"""
     },
@@ -646,7 +355,8 @@ def build_accumulated_text(completed_segments: list) -> str:
             text = item.get("text_display", "")
             
             if item_type == "heading":
-                lines.append(f"\n[Heading: {text}]")
+                title = item.get("title", text)
+                lines.append(f"\n[Heading: {title}]")
             elif speaker:
                 lines.append(f"{speaker}: {text}")
             else:
@@ -674,6 +384,10 @@ def validate_segment(segment_data: dict, segment_config: dict) -> list:
     if first_item.get("type") != "heading":
         errors.append("First item must be type='heading'")
     
+    # Heading must have 'title' field
+    if "title" not in first_item:
+        errors.append("Heading is missing 'title' field")
+    
     # Intro segment: heading must be muted
     if segment_id == 1:
         if first_item.get("speaker", "x") != "":
@@ -684,11 +398,25 @@ def validate_segment(segment_data: dict, segment_config: dict) -> list:
         if len(script) > 1 and script[1].get("speaker") != "Alex":
             errors.append("First dialogue after Intro heading must be from Alex")
     
+    # Outro segment: heading must be muted
+    if segment_id == 9:
+        if first_item.get("speaker", "x") != "":
+            errors.append("Outro heading speaker must be empty string")
+        if first_item.get("text_tts", "x") != "":
+            errors.append("Outro heading text_tts must be empty string")
+        # Second item must be Alex
+        if len(script) > 1 and script[1].get("speaker") != "Alex":
+            errors.append("First dialogue after Outro heading must be from Alex")
+    
     # Check all items have required fields
     for i, item in enumerate(script):
         for field in ["type", "speaker", "text_display", "text_tts"]:
             if field not in item:
                 errors.append(f"Item {i}: missing field '{field}'")
+        
+        # Heading items must have 'title'
+        if item.get("type") == "heading" and "title" not in item:
+            errors.append(f"Item {i}: heading missing 'title' field")
         
         # Check speaker is valid
         speaker = item.get("speaker", "")
@@ -849,9 +577,22 @@ class PDF(FPDF):
                 self.set_font("helvetica", "B", 16)
                 self.set_fill_color(240, 245, 250)
                 self.set_text_color(20, 50, 100)
-                text = item.get("text_display", "").encode('latin-1', 'replace').decode('latin-1')
+                # Use 'title' field for PDF chapter heading (short title)
+                heading_text = item.get("title", item.get("text_display", ""))
+                text = heading_text.encode('latin-1', 'replace').decode('latin-1')
                 self.multi_cell(0, 12, f"  {text}", fill=True, new_x="LMARGIN", new_y="NEXT", align='L')
-                self.ln(6)
+                self.ln(3)
+                
+                # In câu dẫn (text_display) bên dưới tiêu đề cho heading có speaker
+                speaker = item.get("speaker", "")
+                transition = item.get("text_display", "")
+                if speaker and transition and transition != heading_text:
+                    speaker_safe = speaker.encode('latin-1', 'replace').decode('latin-1')
+                    transition_safe = transition.encode('latin-1', 'replace').decode('latin-1')
+                    self.set_font("helvetica", "", 12)
+                    self.set_text_color(45, 45, 45)
+                    self.multi_cell(0, 8, f"**{speaker_safe}:** {transition_safe}", markdown=True, new_x="LMARGIN", new_y="NEXT")
+                self.ln(3)
             
             elif item.get("type") == "dialogue":
                 speaker = item.get("speaker", "Unknown").encode('latin-1', 'replace').decode('latin-1')

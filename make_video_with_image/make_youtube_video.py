@@ -10,7 +10,8 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env"))
 # --- CONFIGURATION ---
-INPUT_DIR = "input"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+INPUT_DIR = os.path.join(BASE_DIR, "input")
 TOPICS_FILE = os.path.join(INPUT_DIR, "topics.txt")
 
 # Read dynamic output directory if it exists, otherwise default to "output"
@@ -19,7 +20,7 @@ if os.path.exists(CURRENT_OUT_DIR_FILE):
     with open(CURRENT_OUT_DIR_FILE, "r", encoding="utf-8") as f:
         OUTPUT_DIR = f.read().strip()
 else:
-    OUTPUT_DIR = "output"
+    OUTPUT_DIR = os.path.join(BASE_DIR, "output")
     
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 

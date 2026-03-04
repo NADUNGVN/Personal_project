@@ -7,14 +7,15 @@ from moviepy import AudioFileClip, VideoClip
 from faster_whisper import WhisperModel
 
 # ================= GLOBAL CONFIGURATION =================
-INPUT_DIR = "input"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+INPUT_DIR = os.path.join(BASE_DIR, "input")
 # Read dynamic output directory if it exists, otherwise default to "output"
 CURRENT_OUT_DIR_FILE = os.path.join(INPUT_DIR, "current_output_dir.txt")
 if os.path.exists(CURRENT_OUT_DIR_FILE):
     with open(CURRENT_OUT_DIR_FILE, "r", encoding="utf-8") as f:
         OUTPUT_DIR = f.read().strip()
 else:
-    OUTPUT_DIR = "output"
+    OUTPUT_DIR = os.path.join(BASE_DIR, "output")
 IMAGE_DIR = os.path.join(INPUT_DIR, "image")
 IMAGE_INPUT_PATH = os.path.join(IMAGE_DIR, "image_input.png")
 TOPICS_FILE = os.path.join(INPUT_DIR, "topics.txt")
@@ -504,7 +505,8 @@ def create_video_podcast():
         codec="libx264", 
         audio_codec="aac",
         threads=4, # Kéo 4 lõi CPU cày để thay thế VGA
-        ffmpeg_params=["-pix_fmt", "yuv420p"] # Ép chuẩn màu mượt trên mọi hệ thống/Tivi
+        ffmpeg_params=["-pix_fmt", "yuv420p"], # Ép chuẩn màu mượt trên mọi hệ thống/Tivi
+        logger=None  # Tắt progress bar MoviePy tránh spam hàng trăm dòng trên Windows
     )
 if __name__ == "__main__":
     create_video_podcast()

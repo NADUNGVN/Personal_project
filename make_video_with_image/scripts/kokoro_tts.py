@@ -15,7 +15,8 @@ ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
 AudioSegment.converter = ffmpeg_exe
 
 # ================= GLOBAL CONFIGURATION# Define directories
-INPUT_DIR = "input"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+INPUT_DIR = os.path.join(BASE_DIR, "input")
 DATA_DIR = r"d:\work\Personal_project\data" # Keep DATA_DIR as it's used later
 
 # Read dynamic output directory if it exists, otherwise default to "output"
@@ -24,7 +25,7 @@ if os.path.exists(CURRENT_OUT_DIR_FILE):
     with open(CURRENT_OUT_DIR_FILE, "r", encoding="utf-8") as f:
         OUTPUT_DIR = f.read().strip()
 else:
-    OUTPUT_DIR = "output"
+    OUTPUT_DIR = os.path.join(BASE_DIR, "output")
 
 TMP_AUDIO_DIR = os.path.join(OUTPUT_DIR, "tmp_kokoro") # Changed to be relative to OUTPUT_DIR
 CURRENT_PDF_FILE = os.path.join(INPUT_DIR, "current_pdf.txt")
