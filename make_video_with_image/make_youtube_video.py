@@ -145,19 +145,30 @@ def generate_youtube_metadata(topic, base_name):
     ])
     
     # Extract exact timestamps from subtitles
-    timestamps_text = "0:00 INTRO\\n"
-    if os.path.exists(subs_path):
+    timestamps_text = "0:00 Welcome to English Podcast Everyday\\n"
+    if os.path.exists(subs_path) and script_data:
         with open(subs_path, 'r', encoding='utf-8') as f:
             subtitles_data = json.load(f)
             
+        script_headings = [item.get("title", "Section") for item in script_data.get('script', []) if item.get("type") == "heading"]
+        
         timestamps_list = []
+        heading_idx = 0
         for sub in subtitles_data:
             if sub.get("type") == "heading":
                 start_sec = int(sub.get("start_time_sec", 0))
                 mins = start_sec // 60
                 secs = start_sec % 60
-                title = sub.get("text", "Section")
-                timestamps_list.append(f"{mins}:{secs:02d} {title}")
+                
+                # Get the clean short title from script.json
+                title = script_headings[heading_idx] if heading_idx < len(script_headings) else sub.get("text", "Section")
+                
+                # Bỏ qua Outro/Intro nếu quá nhiều hoặc lặp lại
+                if heading_idx == 0:
+                    pass # Đã fix cứng 0:00 ở trên
+                else:
+                    timestamps_list.append(f"{mins}:{secs:02d} {title}")
+                heading_idx += 1
                 
         if len(timestamps_list) > 0:
             timestamps_text += "\\n".join(timestamps_list)
@@ -260,7 +271,7 @@ def main():
     from datetime import datetime
     date_str = datetime.now().strftime("%d_%m_%Y")
     safe_topic_name = "".join([c for c in topic if c.isalnum() or c == ' ']).rstrip().replace(" ", "_")
-    dynamic_out_dir = os.path.join("output", date_str, safe_topic_name)
+    dynamic_out_dir = os.path.join(BASE_DIR, "output", date_str, safe_topic_name)
     os.makedirs(dynamic_out_dir, exist_ok=True)
     
     # Save the dynamic output dir to a state file so other scripts can read it

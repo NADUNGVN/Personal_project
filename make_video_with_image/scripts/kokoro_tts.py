@@ -40,7 +40,7 @@ VOICE_MAP = {
     "Alex": "am_puck",      # Host 1
     "Sarah": "af_bella",    # Host 2
     "Michael": "am_michael",# Roleplay Male 1
-    "Nicole": "af_nicole",  # Roleplay Female 1
+    "Nicole": "af_heart",   # Roleplay Female 1
     "Adam": "am_adam",      # Roleplay Male 2
     "Sky": "af_sky"         # Roleplay Female 2
 }

@@ -645,7 +645,8 @@ def main():
     print(f"\n  💾 JSON saved to {json_filename}")
     
     # Save PDF (E-book style)
-    pdf_filename = os.path.join(OUTPUT_DIR, f"{safe_topic_name}_script.pdf")
+    clean_pdf_name = "".join([c for c in topic_name if c.isalnum() or c==' ']).strip()
+    pdf_filename = os.path.join(OUTPUT_DIR, f"{clean_pdf_name}.pdf")
     create_pdf_from_json(json_data, pdf_filename)
     print(f"  📕 PDF saved to {pdf_filename}")
 
