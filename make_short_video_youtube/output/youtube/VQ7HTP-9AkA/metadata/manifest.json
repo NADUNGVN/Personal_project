@@ -1,0 +1,34 @@
+{
+  "platform": "youtube",
+  "source_url": "https://www.youtube.com/watch?v=VQ7HTP-9AkA&t=1s",
+  "id": "VQ7HTP-9AkA",
+  "title": "Daily English Conversation for Motivation | The Power of Self-Discipline | English Podcast",
+  "uploader": "Mr. English Channel",
+  "channel": "Mr. English Channel",
+  "webpage_url": "https://www.youtube.com/watch?v=VQ7HTP-9AkA",
+  "duration_seconds": 841,
+  "downloaded_at": "2026-03-06T14:23:23",
+  "grouped_files": {
+    "media": [
+      "media\\VQ7HTP-9AkA.mp4"
+    ],
+    "metadata": [
+      "metadata\\VQ7HTP-9AkA.description",
+      "metadata\\VQ7HTP-9AkA.info.json"
+    ],
+    "subtitles": [
+      "subtitles\\VQ7HTP-9AkA.en.vtt"
+    ],
+    "thumbnails": [
+      "thumbnails\\VQ7HTP-9AkA.webp"
+    ],
+    "other": []
+  },
+  "files": [
+    "media\\VQ7HTP-9AkA.mp4",
+    "metadata\\VQ7HTP-9AkA.description",
+    "metadata\\VQ7HTP-9AkA.info.json",
+    "subtitles\\VQ7HTP-9AkA.en.vtt",
+    "thumbnails\\VQ7HTP-9AkA.webp"
+  ]
+}
