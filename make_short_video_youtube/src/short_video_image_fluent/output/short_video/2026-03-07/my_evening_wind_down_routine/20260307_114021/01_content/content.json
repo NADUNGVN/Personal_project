@@ -1,0 +1,21 @@
+{
+  "project_id": "20260307_114021",
+  "generated_at": "2026-03-07T11:40:36",
+  "model": "google/gemini-2.5-flash",
+  "target_duration_sec": 55,
+  "estimated_duration_sec": 59.0,
+  "word_count_en": 118,
+  "topic": "My Evening Wind-Down Routine",
+  "title_en": "CHILLING OUT AFTER WORK",
+  "text_en": "You know, after a long day at work, I really look forward to my evening wind-down routine. First off, I usually kick off my shoes the moment I get inside. Then, I make myself a nice cup of herbal tea – camomile is my go-to. I don't really watch much TV, but I love to curl up on the sofa with a good book. Sometimes, if I'm feeling a bit restless, I'll put on some soft jazz music. It really helps me clear my head. Before bed, I always try to do a quick five-minute meditation. It just helps me switch off and get ready for a good night's sleep. It's nothing fancy, but it works wonders for me.",
+  "difficulty": "A2-B1",
+  "hashtags": [
+    "#EveningRoutine",
+    "#WindDown",
+    "#Relaxation",
+    "#DailyHabits",
+    "#SelfCare",
+    "#AfterWork",
+    "#TeaTime"
+  ]
+}

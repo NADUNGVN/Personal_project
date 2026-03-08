@@ -1,108 +1,74 @@
-# VibeVoice-Realtime-0.5B Prediction
+# VibeVoice Podcast/Video Pipeline
 
-Text-to-Speech generation using Microsoft's [VibeVoice-Realtime-0.5B](https://huggingface.co/microsoft/VibeVoice-Realtime-0.5B).
+Text-to-Speech and karaoke video generation using Microsoft's `VibeVoice-Realtime-0.5B`.
+
+## What This Project Can Do
+
+- Generate a long podcast script from a topic (multi-segment, validated JSON)
+- Export script to JSON + PDF ebook
+- Generate multi-speaker audio with VibeVoice
+- Build timed subtitles JSON
+- Render karaoke-style MP4 with waveform visualizer
+- Generate YouTube title/description/tags metadata from the final script + timestamps
 
 ## Setup
 
-### 1. Clone & Install VibeVoice
+1. Clone and install VibeVoice:
 
 ```bash
 git clone https://github.com/microsoft/VibeVoice.git
 cd VibeVoice
 pip install -e ".[streamingtts]"
-
-# Optional (recommended for CUDA): install Flash Attention for better performance
-pip install flash-attn --no-build-isolation
 ```
 
-### 2. First Run (Auto-downloads model from HuggingFace)
+2. Install dependencies used by this repo:
 
 ```bash
-cd d:\vibe-voice
-python predict.py --text "Hello, this is a test." --voice_file VibeVoice/demo/voices/streaming_model/Wayne.pt
+pip install openai python-dotenv fpdf2 pydub imageio-ffmpeg faster-whisper moviepy soundfile scipy
 ```
 
-## Usage
+3. Add `OPENROUTER_API_KEY` to `.env` (supported locations):
 
-### Basic Text-to-Speech
+- `vibe-voice/.env`
+- or workspace root `.env` (`D:\work\Personal_project\.env`)
+
+## End-to-End Run (Recommended)
 
 ```bash
-# Simple text
-python predict.py --text "Hello world, this is VibeVoice!" --voice_file path/to/voice.pt
-
-# From a text file
-python predict.py --text_file sample.txt --voice_file path/to/voice.pt
-
-# Custom output path
-python predict.py --text "Hello" --voice_file voice.pt --output my_output.wav
+cd d:\work\Personal_project\vibe-voice
+python make_youtube_video.py --topic "Talking About Your Week: Boring vs. Brilliant"
 ```
 
-### Using Voice Presets
+This runs:
+
+1. `scripts/podcast_generator.py`
+2. `scripts/vibevoice_tts.py`
+3. `scripts/video_renderer.py`
+4. YouTube metadata generation
+
+Outputs are written to dynamic folder:
+
+`output/<DD_MM_YYYY>/<SAFE_TOPIC_NAME>/`
+
+and tracked by:
+
+`input/current_output_dir.txt`
+
+## Standalone Scripts
 
 ```bash
-# If voices are in the expected directory structure, use speaker names
-python predict.py --text "Hello" --speaker_name Wayne
-
-# Or specify a .pt voice file directly
-python predict.py --text "Hello" --voice_file VibeVoice/demo/voices/streaming_model/Carter.pt
-
-# List available voices
-python predict.py --list_voices
+python scripts/podcast_generator.py
+python scripts/vibevoice_tts.py
+python scripts/video_renderer.py
 ```
 
-### Streaming Mode (Long Text)
+Note: standalone scripts read topic from `input/topics.txt` and output directory from `input/current_output_dir.txt` when present.
 
-```bash
-# Process long text in chunks
-python predict_streaming.py --text_file long_story.txt --voice_file voice.pt
+## Core Files
 
-# Adjust chunk size
-python predict_streaming.py --text "Very long text..." --voice_file voice.pt --chunk_size 300
-
-# Save individual chunks too
-python predict_streaming.py --text_file story.txt --voice_file voice.pt --save_chunks
-```
-
-### Generation Parameters
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `--cfg_scale` | 1.5 | Classifier-Free Guidance (1.0-3.0). Higher = more voice prompt adherence |
-| `--ddpm_steps` | 5 | Denoising steps. More = better quality, slower |
-| `--device` | auto | `auto`, `cuda`, `mps`, `cpu` |
-
-### Python API
-
-```python
-from predict import load_model_and_processor, predict, save_audio
-
-# Load once
-model, processor, device = load_model_and_processor()
-
-# Generate many times
-result = predict(
-    text="Hello world!",
-    model=model, processor=processor, device=device,
-    voice_preset_path="path/to/voice.pt",
-)
-
-save_audio(result["audio"], "output.wav")
-print(f"Duration: {result['duration_seconds']:.1f}s, RTF: {result['rtf']:.3f}x")
-```
-
-## Files
-
-| File | Description |
-|------|-------------|
-| `predict.py` | Main prediction script (CLI + importable module) |
-| `predict_streaming.py` | Streaming prediction for long texts |
-| `example_usage.py` | Python API usage example |
-| `sample.txt` | Sample text for testing |
-
-## Requirements
-
-- Python ≥ 3.9
-- PyTorch with CUDA (recommended) / MPS / CPU
-- transformers == 4.51.3
-- vibevoice package (from GitHub)
-- GPU with ≥6GB VRAM recommended (model is 0.5B parameters)
+- `make_youtube_video.py`: Orchestrates the whole pipeline
+- `scripts/podcast_generator.py`: Multi-segment script generation + PDF export
+- `scripts/vibevoice_tts.py`: VibeVoice TTS + subtitle timestamping + training data export
+- `scripts/video_renderer.py`: Whisper alignment + karaoke + visualizer rendering
+- `predict.py`: Reusable VibeVoice prediction API + CLI
+- `predict_streaming.py`: Chunked streaming prediction for very long text
