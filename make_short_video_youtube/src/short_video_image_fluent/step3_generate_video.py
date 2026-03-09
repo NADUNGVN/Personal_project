@@ -17,6 +17,7 @@ from openai import OpenAI
 from faster_whisper import WhisperModel
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
+from proglog import ProgressBarLogger
 
 import imageio_ffmpeg
 ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
@@ -57,12 +58,118 @@ SYNC_OFFSET = 0.14
 MIN_GAP_FILL = 0.4
 
 
+class SingleLineRenderLogger(ProgressBarLogger):
+    def __init__(self, label: str = "RENDER", width: int = 36, progress_callback=None):
+        super().__init__()
+        self.label = label
+        self.width = width
+        self._last_percent = -1
+        self._active_bar: str | None = None
+        self._bar_totals: dict[str, float] = {}
+        self._progress_callback = progress_callback
+
+    def _print_progress(self, percent: int) -> None:
+        percent = max(0, min(100, int(percent)))
+        filled = int(self.width * percent / 100)
+        bar = "#" * filled + "-" * (self.width - filled)
+        print(f"\r[{self.label}] [{bar}] {percent:3d}%", end="", flush=True)
+        if self._progress_callback is not None:
+            self._progress_callback(percent)
+
+    def start(self) -> None:
+        self._last_percent = 0
+        self._print_progress(0)
+
+    def bars_callback(self, bar, attr, value, old_value=None):
+        if attr == "total":
+            try:
+                total = float(value)
+            except Exception:
+                return
+            if total > 0:
+                self._bar_totals[bar] = total
+                if self._active_bar is None or bar in {"frame_index", "t"}:
+                    self._active_bar = bar
+            return
+
+        if attr != "index":
+            return
+
+        if self._active_bar is None:
+            self._active_bar = bar
+        elif bar != self._active_bar:
+            if bar in {"frame_index", "t"} and self._active_bar not in {"frame_index", "t"}:
+                self._active_bar = bar
+            elif self._active_bar not in self._bar_totals and bar in self._bar_totals:
+                self._active_bar = bar
+            else:
+                return
+
+        total = self._bar_totals.get(self._active_bar)
+        if not total:
+            info = self.bars.get(self._active_bar, {})
+            try:
+                total = float(info.get("total") or 0.0)
+            except Exception:
+                total = 0.0
+            if total <= 0:
+                return
+            self._bar_totals[self._active_bar] = total
+
+        try:
+            index = float(value)
+        except Exception:
+            return
+
+        percent = int((index / total) * 100)
+        if percent != self._last_percent:
+            self._last_percent = percent
+            self._print_progress(percent)
+
+    def finish(self) -> None:
+        if self._last_percent < 100:
+            self._print_progress(100)
+        print()
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate 9:16 Short Video from Content and Audio.")
     parser.add_argument("--project-dir", type=Path, help="Path to the specific project directory")
     parser.add_argument("--font", default=FONT_PATH, help="Path to TrueType font file")
     
     return parser.parse_args()
+
+
+def write_json(path: Path, payload: dict) -> None:
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def validate_rendered_video(video_path: Path) -> tuple[bool, float, str]:
+    if not video_path.exists():
+        return False, 0.0, "Missing output video file."
+
+    try:
+        file_size = video_path.stat().st_size
+    except OSError as exc:
+        return False, 0.0, f"Cannot read output file metadata: {exc}"
+
+    if file_size <= 0:
+        return False, 0.0, "Output video file is empty."
+
+    clip = None
+    try:
+        clip = VideoFileClip(str(video_path))
+        duration = float(clip.duration or 0.0)
+    except Exception as exc:
+        return False, 0.0, f"Cannot open rendered video: {exc}"
+    finally:
+        if clip is not None:
+            clip.close()
+
+    if duration <= 0.0:
+        return False, duration, "Rendered video duration is invalid."
+
+    return True, duration, ""
 
 
 def load_env_and_get_client(project_dir: Path) -> OpenAI:
@@ -427,8 +534,15 @@ class HighlightRenderer(VideoClip):
         return np.array(frame_img)
 
 
-def render_video(image_path: Path, audio_path: Path, out_path: Path, title: str, text: str, karaoke_timings: list):
-    print("[INFO] Rendering Final Video...")
+def render_video(
+    image_path: Path,
+    audio_path: Path,
+    out_path: Path,
+    title: str,
+    text: str,
+    karaoke_timings: list,
+    progress_callback=None,
+):
     audio_clip = AudioFileClip(str(audio_path))
     duration = audio_clip.duration
     
@@ -481,14 +595,17 @@ def render_video(image_path: Path, audio_path: Path, out_path: Path, title: str,
     final = CompositeVideoClip([vid_layer, bg_bottom, highlight_clip, clip_text], size=(VIDEO_WIDTH, VIDEO_HEIGHT))
     final = final.with_audio(audio_clip).with_duration(duration)
     
+    progress_logger = SingleLineRenderLogger(label="RENDER", progress_callback=progress_callback)
+    progress_logger.start()
     final.write_videofile(
         str(out_path),
         fps=30,
         codec="libx264",
         audio_codec="aac",
         threads=4,
-        logger=None # Suppress massive MoviePy logs
+        logger=progress_logger,
     )
+    progress_logger.finish()
 
 
 def main():
@@ -526,6 +643,17 @@ def main():
     vid_dir.mkdir(parents=True, exist_ok=True)
     img_path = vid_dir / "cover.png"
     out_mp4 = vid_dir / "final_short.mp4"
+    render_status_path = vid_dir / "render_status.json"
+
+    render_status = {
+        "status": "rendering",
+        "success": False,
+        "progress_percent": 0,
+        "project_dir": str(proj_dir),
+        "video_path": str(out_mp4),
+        "started_at": datetime.now().isoformat(timespec="seconds"),
+    }
+    write_json(render_status_path, render_status)
     
     client = load_env_and_get_client(project_root)
     
@@ -569,8 +697,49 @@ def main():
     timings = get_timings(audio_file)
     
     # 3. Render Video
-    render_video(image_path=img_path, audio_path=audio_file, out_path=out_mp4, title=title, text=text, karaoke_timings=timings)
-    
+    def on_render_progress(percent: int) -> None:
+        render_status["progress_percent"] = int(percent)
+        render_status["updated_at"] = datetime.now().isoformat(timespec="seconds")
+        write_json(render_status_path, render_status)
+
+    try:
+        render_video(
+            image_path=img_path,
+            audio_path=audio_file,
+            out_path=out_mp4,
+            title=title,
+            text=text,
+            karaoke_timings=timings,
+            progress_callback=on_render_progress,
+        )
+
+        ok, duration_sec, error_message = validate_rendered_video(out_mp4)
+        if not ok:
+            raise RuntimeError(error_message)
+
+        render_status.update(
+            {
+                "status": "completed",
+                "success": True,
+                "progress_percent": 100,
+                "completed_at": datetime.now().isoformat(timespec="seconds"),
+                "duration_sec": round(duration_sec, 3),
+                "file_size_bytes": out_mp4.stat().st_size,
+            }
+        )
+        write_json(render_status_path, render_status)
+    except Exception as exc:
+        render_status.update(
+            {
+                "status": "failed",
+                "success": False,
+                "error": str(exc),
+                "failed_at": datetime.now().isoformat(timespec="seconds"),
+            }
+        )
+        write_json(render_status_path, render_status)
+        raise
+
     print(f"\n[DONE] Project Video Successfully Generated: {out_mp4}")
 
 if __name__ == "__main__":
