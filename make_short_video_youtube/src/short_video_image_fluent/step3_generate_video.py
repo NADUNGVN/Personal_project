@@ -595,17 +595,50 @@ def render_video(
     final = CompositeVideoClip([vid_layer, bg_bottom, highlight_clip, clip_text], size=(VIDEO_WIDTH, VIDEO_HEIGHT))
     final = final.with_audio(audio_clip).with_duration(duration)
     
+    # Đặt file tạm audio vào cùng thư mục output để tránh xung đột
+    # khi chạy nhiều terminal song song (mỗi project có file tạm riêng)
+    temp_audio_path = out_path.parent / f"TEMP_MPY_{out_path.stem}_audio.m4a"
+
     progress_logger = SingleLineRenderLogger(label="RENDER", progress_callback=progress_callback)
     progress_logger.start()
-    final.write_videofile(
-        str(out_path),
-        fps=30,
-        codec="libx264",
-        audio_codec="aac",
-        threads=4,
-        logger=progress_logger,
-    )
+
+    # Ưu tiên GPU (NVIDIA NVENC), fallback về CPU (libx264) nếu không hỗ trợ
+    try:
+        print("[INFO] Attempting GPU render with h264_nvenc...")
+        final.write_videofile(
+            str(out_path),
+            fps=30,
+            codec="h264_nvenc",
+            audio_codec="aac",
+            threads=4,
+            logger=progress_logger,
+            temp_audiofile=str(temp_audio_path),
+        )
+        print("[INFO] GPU render (h264_nvenc) successful.")
+    except Exception as nvenc_err:
+        print(f"\n[WARN] h264_nvenc failed ({nvenc_err}). Falling back to CPU (libx264)...")
+        # Reset progress bar cho lần render lại
+        progress_logger = SingleLineRenderLogger(label="RENDER (CPU)", progress_callback=progress_callback)
+        progress_logger.start()
+        final.write_videofile(
+            str(out_path),
+            fps=30,
+            codec="libx264",
+            audio_codec="aac",
+            threads=4,
+            logger=progress_logger,
+            temp_audiofile=str(temp_audio_path),
+        )
+        print("[INFO] CPU render (libx264) successful.")
+
     progress_logger.finish()
+
+    # Dọn file tạm nếu MoviePy không tự xóa
+    if temp_audio_path.exists():
+        try:
+            temp_audio_path.unlink()
+        except OSError:
+            pass
 
 
 def main():

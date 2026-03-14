@@ -74,7 +74,7 @@ def load_template(project_root: Path) -> str:
     template_path = project_root / "content" / "youtube_content.md"
     if not template_path.exists():
         print(f"[WARNING] YouTube template not found at {template_path}. Using a default template format.")
-        return """# YOUTUBE VIDEO METADATA\n\n## TIÊU ĐỀ (TITLE)\n\n[Your Catchy Title] | English Reading & Listening Practice ([Difficulty])\n\n## MÔ TẢ (DESCRIPTION)\n\n🚀 **The Story: [Topic]**\n[Short engaging hook based on the text]\n\n"[An engaging quote from the script]"\n\n🎧 **Key Vocabulary:**\n- [Word 1]\n- [Word 2]\n\n📝 **How to use this video:**\n1️⃣ Listen and read along with the highlighted text\n2️⃣ Pause and repeat to practice speaking\n3️⃣ Watch daily to build habits and confidence\n\n🌟 **About this channel:**\nThis video is made for English learners who want to build confidence through real-life listening and reading practice.\n\n---\n#englishforbeginners #learnenglish #englishlistening"""
+        return """# YOUTUBE VIDEO METADATA\n\n## TIÊU ĐỀ (TITLE)\n\n[Your Catchy Title] | English Reading & Listening Practice ([Difficulty])\n\n## MÔ TẢ (DESCRIPTION)\n\n🚀 The Story: [Topic]\n[Short engaging hook based on the text]\n\n"[An engaging quote from the script]"\n\n🎧 Key Vocabulary:\n- [Word 1]\n- [Word 2]\n\n📝 How to use this video:\n1️⃣ Listen and read along with the highlighted text\n2️⃣ Pause and repeat to practice speaking\n3️⃣ Watch daily to build habits and confidence\n\n🌟 About this channel:\nThis video is made for English learners who want to build confidence through real-life listening and reading practice.\n\n---\n#englishforbeginners #learnenglish #englishlistening"""
     with open(template_path, "r", encoding="utf-8") as f:
         return f.read()
 
@@ -93,6 +93,7 @@ def generate_youtube_metadata(
 Your task is to take a video's topic, script, difficulty level, and keywords, and format them into a highly engaging YouTube Title and Description.
 
 CRITICAL: You MUST strictly follow the structural format of the provided Markdown Template.
+- Do NOT use any markdown formatting such as asterisks (**bold**, *italic*). Output plain text only for all sections.
 - Translate the summary/hook to Vietnamese or keep it English based on what looks natural for the target audience in the template (if the template uses English for the hook, use English). 
 - Ensure the Title follows the `Catchy Hook | English Reading & Listening Practice (Level)` format.
 - Extract 8-10 highly relevant vocabulary words from the script for the 'Key Vocabulary' section.
@@ -181,20 +182,20 @@ def generate_youtube_metadata_fallback(topic: str, text: str, difficulty: str, h
 
     title = f"{topic} | English Reading & Listening Practice ({difficulty})"
     return (
-        "# YOUTUBE VIDEO METADATA\n\n"
-        "## TIÊU ĐỀ (TITLE)\n\n"
+        "YOUTUBE VIDEO METADATA\n\n"
+        "TIÊU ĐỀ (TITLE)\n\n"
         f"{title}\n\n"
-        "## MÔ TẢ (DESCRIPTION)\n\n"
-        f"🚀 **The Story: {topic}**\n"
+        "MÔ TẢ (DESCRIPTION)\n\n"
+        f"🚀 The Story: {topic}\n"
         f"{hook}\n\n"
         f"\"{quote}\"\n\n"
-        "🎧 **Key Vocabulary:**\n"
+        "🎧 Key Vocabulary:\n"
         f"{vocab_lines}\n\n"
-        "📝 **How to use this video:**\n"
+        "📝 How to use this video:\n"
         "1️⃣ Listen and read along with the highlighted text\n"
         "2️⃣ Pause and repeat to practice speaking\n"
         "3️⃣ Watch daily to build habits and confidence\n\n"
-        "🌟 **About this channel:**\n"
+        "🌟 About this channel:\n"
         "This video is made for English learners who want to build confidence through real-life listening and reading practice.\n\n"
         "---\n"
         f"{hashtags_line}\n\n"

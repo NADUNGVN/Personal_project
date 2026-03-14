@@ -109,6 +109,10 @@ def extract_word_timestamps(audio_path, subtitles):
     # Xây dựng Ground Truth rành mạch từ file JSON kịch bản (Bảo vệ 100% text không mất chữ)
     gt_words = []
     for sub in subtitles:
+        # SKIP silent entries (duration 0 headings, intro labels etc)
+        if sub.get("duration_sec", 0) <= 0:
+            continue
+            
         speaker = sub.get("speaker", "Alex")
         text = sub.get("text", "")
         # Tách chữ nhưng giữ lại dấu phẩy, chấm... (Các từ có nghĩa)
