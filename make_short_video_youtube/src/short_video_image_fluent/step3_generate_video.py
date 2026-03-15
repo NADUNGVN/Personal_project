@@ -25,14 +25,13 @@ ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
 # Try to load moviepy (handle different versions)
 try:
     from moviepy.video.io.VideoFileClip import VideoFileClip
-    from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
-    from moviepy.video.VideoClip import ColorClip, ImageClip, VideoClip
+    from moviepy.video.VideoClip import VideoClip
     from moviepy.audio.io.AudioFileClip import AudioFileClip
 except ImportError:
     try:
-        from moviepy import VideoFileClip, AudioFileClip, CompositeVideoClip, ColorClip, ImageClip, VideoClip
+        from moviepy import VideoFileClip, AudioFileClip, VideoClip
     except ImportError:
-        from moviepy.editor import VideoFileClip, AudioFileClip, CompositeVideoClip, ColorClip, ImageClip, VideoClip
+        from moviepy.editor import VideoFileClip, AudioFileClip, VideoClip
 
 
 APP_NAME = "SocialHarvester"
@@ -456,82 +455,87 @@ def build_word_timings(layout, karaoke_timings):
     return word_times
 
 
-class HighlightRenderer(VideoClip):
-    def __init__(self, timings, layout, box_color, size, duration):
-        # Moviepy VideoClip expects a make_frame keyword in v2, but v1 doesn't 
-        super().__init__()
-        self.timings = timings
-        self.layout = layout
-        self.box_color = box_color
-        self.size = size
-        self.duration = duration
-        self.ismask = False
-        
-        self.line_bounds = {}
-        for item in self.layout:
-            line = item.get("line", 0); y1 = item["bbox"][1]; y2 = item["bbox"][3]
-            if line not in self.line_bounds: self.line_bounds[line] = [y1, y2]
+def _draw_highlights_on_frame(draw, timings, layout, line_bounds, box_color, t):
+    """Vẽ karaoke highlight trực tiếp lên PIL ImageDraw tại thời điểm t."""
+    segments_by_line = {line: [] for line in line_bounds.keys()}
+
+    for i, item in enumerate(layout):
+        timing = timings[i]
+        if timing["start"] is None or timing["end"] is None or t < timing["start"]:
+            continue
+        x1, y1, x2, y2 = item["bbox"]
+        w = max(0.0, x2 - x1)
+        line = item.get("line", 0)
+
+        if t >= timing["end"] or timing["end"] <= timing["start"]:
+            right = x2
+        else:
+            progress = min(1.0, max(0.0, (t - timing["start"]) / max(timing["end"] - timing["start"], 1e-6)))
+            right = x1 + (w * progress)
+
+        if right - x1 >= 1.0:
+            segments_by_line[line].append((x1, right))
+
+    for i in range(len(layout) - 1):
+        if layout[i].get("line") != layout[i + 1].get("line"):
+            continue
+        if timings[i]["end"] is None or timings[i + 1]["start"] is None:
+            continue
+        line = layout[i].get("line", 0)
+        prev_end = timings[i]["end"]
+        next_start = timings[i + 1]["start"]
+        if t <= prev_end:
+            continue
+        gap_left = layout[i]["bbox"][2]
+        gap_right = layout[i + 1]["bbox"][0]
+        if gap_right <= gap_left:
+            continue
+        progress = 1.0 if next_start <= prev_end else min(1.0, max(0.0, (t - prev_end) / max(next_start - prev_end, 1e-6)))
+        if progress <= 0.0:
+            continue
+        conn_right = gap_left + (gap_right - gap_left) * progress
+        if conn_right - gap_left >= 1.0:
+            segments_by_line[line].append((gap_left, conn_right))
+
+    for line, segments in segments_by_line.items():
+        if not segments:
+            continue
+        segments.sort(key=lambda s: s[0])
+        merged = []
+        cur_l, cur_r = segments[0]
+        for l, r in segments[1:]:
+            if l <= cur_r + 0.5:
+                cur_r = max(cur_r, r)
             else:
-                self.line_bounds[line][0] = min(self.line_bounds[line][0], y1)
-                self.line_bounds[line][1] = max(self.line_bounds[line][1], y2)
-        
-        # This handles cross-compatibility for MoviePy v1.x and v2.x
-        self.make_frame = self._make_frame_impl
-        self.get_frame = self._make_frame_impl
-        
-    def _make_frame_impl(self, t):
-        frame_img = Image.new('RGBA', self.size, (0,0,0,0))
-        draw = ImageDraw.Draw(frame_img)
-        segments_by_line = {line: [] for line in self.line_bounds.keys()}
-        
-        for i, item in enumerate(self.layout):
-            timing = self.timings[i]
-            if timing["start"] is None or timing["end"] is None or t < timing["start"]: continue
-            x1, y1, x2, y2 = item["bbox"]; w = max(0.0, x2 - x1); line = item.get("line", 0)
-            
-            if t >= timing["end"] or timing["end"] <= timing["start"]: right = x2
-            else:
-                progress = min(1.0, max(0.0, (t - timing["start"]) / max(timing["end"] - timing["start"], 1e-6)))
-                right = x1 + (w * progress)
+                merged.append((cur_l, cur_r))
+                cur_l, cur_r = l, r
+        merged.append((cur_l, cur_r))
 
-            if right - x1 >= 1.0: segments_by_line[line].append((x1, right))
+        y1, y2 = line_bounds.get(line, (0, 0))
+        h = max(0.0, y2 - y1)
+        for l, r in merged:
+            w = max(0.0, r - l)
+            if w < 1.0 or h < 1.0:
+                continue
+            radius = min(12, w / 2.0, h / 2.0)
+            draw.rounded_rectangle((l, y1, r, y2), radius=radius, fill=box_color)
 
-        for i in range(len(self.layout) - 1):
-            if self.layout[i].get("line") != self.layout[i + 1].get("line"): continue
-            if self.timings[i]["end"] is None or self.timings[i + 1]["start"] is None: continue
-            
-            line = self.layout[i].get("line", 0)
-            prev_end = self.timings[i]["end"]
-            next_start = self.timings[i + 1]["start"]
-            
-            if t <= prev_end: continue
-            gap_left = self.layout[i]["bbox"][2]; gap_right = self.layout[i + 1]["bbox"][0]
-            if gap_right <= gap_left: continue
-            
-            progress = 1.0 if next_start <= prev_end else min(1.0, max(0.0, (t - prev_end) / max(next_start - prev_end, 1e-6)))
-            if progress <= 0.0: continue
-            
-            conn_right = gap_left + (gap_right - gap_left) * progress
-            if conn_right - gap_left >= 1.0: segments_by_line[line].append((gap_left, conn_right))
 
-        for line, segments in segments_by_line.items():
-            if not segments: continue
-            segments.sort(key=lambda s: s[0])
-            merged = []; cur_l, cur_r = segments[0]
-            for l, r in segments[1:]:
-                if l <= cur_r + 0.5: cur_r = max(cur_r, r)
-                else: merged.append((cur_l, cur_r)); cur_l, cur_r = l, r
-            merged.append((cur_l, cur_r))
-
-            y1, y2 = self.line_bounds.get(line, (0, 0))
-            h = max(0.0, y2 - y1)
-            for l, r in merged:
-                w = max(0.0, r - l)
-                if w < 1.0 or h < 1.0: continue
-                radius = min(12, w / 2.0, h / 2.0)
-                draw.rounded_rectangle((l, y1, r, y2), radius=radius, fill=self.box_color)
-                
-        return np.array(frame_img)
+def _resize_and_crop_pil(img_pil: Image.Image, target_w: int, target_h: int) -> Image.Image:
+    """Resize + center-crop PIL Image về đúng kích thước target."""
+    src_w, src_h = img_pil.size
+    ratio_src = src_w / src_h
+    ratio_tgt = target_w / target_h
+    if ratio_src > ratio_tgt:
+        new_h = target_h
+        new_w = int(src_w * target_h / src_h)
+    else:
+        new_w = target_w
+        new_h = int(src_h * target_w / src_w)
+    img_pil = img_pil.resize((new_w, new_h), Image.LANCZOS)
+    left = (new_w - target_w) // 2
+    top = (new_h - target_h) // 2
+    return img_pil.crop((left, top, left + target_w, top + target_h))
 
 
 def render_video(
@@ -545,90 +549,96 @@ def render_video(
 ):
     audio_clip = AudioFileClip(str(audio_path))
     duration = audio_clip.duration
-    
-    # TOP SECTION (Image)
-    top_img_clip = ImageClip(str(image_path))
-    ratio_img = top_img_clip.w / top_img_clip.h
-    ratio_slot = VIDEO_WIDTH / TOP_HEIGHT
-    
-    if ratio_img > ratio_slot:
-        vid = top_img_clip.resized(height=TOP_HEIGHT)
-        vid_layer = vid.cropped(x1=(vid.w - VIDEO_WIDTH)//2, width=VIDEO_WIDTH)
-    else:
-        vid = top_img_clip.resized(width=VIDEO_WIDTH)
-        vid_layer = vid.cropped(y1=(vid.h - TOP_HEIGHT)//2, height=TOP_HEIGHT)
-        
-    vid_layer = vid_layer.with_duration(duration).with_position(('center', 'top'))
 
-    # BOTTOM SECTION (BG + Text + Highlight)
+    # ── PRE-RENDER ALL STATIC LAYERS INTO RAM ──────────────────────────────
+    print("[INFO] Pre-rendering static layers into RAM...")
+
+    # Top image (cover)
+    top_pil = _resize_and_crop_pil(
+        Image.open(str(image_path)).convert("RGB"), VIDEO_WIDTH, TOP_HEIGHT
+    )
+
+    # Bottom background
     bg_bottom_path = "D:/work/Personal_project/make_short_video_youtube/image/image_background/ChatGPT Image 13_35_23 23 thg 1, 2026.png"
     if os.path.exists(bg_bottom_path):
-        bg_bottom_clip = ImageClip(bg_bottom_path)
-        ratio_bg = bg_bottom_clip.w / bg_bottom_clip.h
-        ratio_slot = VIDEO_WIDTH / BOTTOM_HEIGHT
-        
-        if ratio_bg > ratio_slot:
-            bg_vid = bg_bottom_clip.resized(height=BOTTOM_HEIGHT)
-            bg_bottom = bg_vid.cropped(x1=(bg_vid.w - VIDEO_WIDTH)//2, width=VIDEO_WIDTH)
-        else:
-            bg_vid = bg_bottom_clip.resized(width=VIDEO_WIDTH)
-            bg_bottom = bg_vid.cropped(y1=(bg_vid.h - BOTTOM_HEIGHT)//2, height=BOTTOM_HEIGHT)
-            
-        bg_bottom = bg_bottom.with_duration(duration).with_position(('center', 'bottom'))
+        bg_pil = _resize_and_crop_pil(
+            Image.open(bg_bottom_path).convert("RGB"), VIDEO_WIDTH, BOTTOM_HEIGHT
+        )
     else:
-        bg_bottom = ColorClip(size=(VIDEO_WIDTH, BOTTOM_HEIGHT), color=(20, 20, 20)).with_duration(duration).with_position(('center', 'bottom'))
-    
-    img_text, layout = create_text_layout(text, VIDEO_WIDTH, BOTTOM_HEIGHT, FONT_SIZE, TEXT_COLOR, title_text=title, align="justify")
-    clip_text = ImageClip(np.array(img_text)).with_duration(duration).with_position((0, TOP_HEIGHT))
-    
+        bg_pil = Image.new("RGB", (VIDEO_WIDTH, BOTTOM_HEIGHT), (20, 20, 20))
+
+    # Full canvas template (top + bottom stitched)
+    canvas_template = Image.new("RGB", (VIDEO_WIDTH, VIDEO_HEIGHT))
+    canvas_template.paste(top_pil, (0, 0))
+    canvas_template.paste(bg_pil, (0, TOP_HEIGHT))
+
+    # Text overlay (RGBA, pre-rendered once)
+    img_text, layout = create_text_layout(
+        text, VIDEO_WIDTH, BOTTOM_HEIGHT, FONT_SIZE, TEXT_COLOR, title_text=title, align="justify"
+    )
+    text_rgba = img_text  # Already RGBA PIL Image from create_text_layout
+
+    # Word timings
     word_timings = build_word_timings(layout, karaoke_timings)
-    
-    highlight_clip = HighlightRenderer(
-        timings=word_timings, 
-        layout=layout, 
-        box_color=HIGHLIGHT_COLOR, 
-        size=(VIDEO_WIDTH, BOTTOM_HEIGHT), 
-        duration=duration
-    ).with_position((0, TOP_HEIGHT))
-    
-    # COMPOSE & EXPORT
-    final = CompositeVideoClip([vid_layer, bg_bottom, highlight_clip, clip_text], size=(VIDEO_WIDTH, VIDEO_HEIGHT))
-    final = final.with_audio(audio_clip).with_duration(duration)
-    
+
+    # Pre-compute line_bounds for highlight drawing
+    line_bounds: dict[int, list] = {}
+    for item in layout:
+        line = item.get("line", 0)
+        y1, y2 = item["bbox"][1], item["bbox"][3]
+        if line not in line_bounds:
+            line_bounds[line] = [y1, y2]
+        else:
+            line_bounds[line][0] = min(line_bounds[line][0], y1)
+            line_bounds[line][1] = max(line_bounds[line][1], y2)
+
+    print("[INFO] Static layers ready. Starting frame generation...")
+
+    # ── UNIFIED PIL make_frame ─────────────────────────────────────────────
+    def make_frame(t):
+        # 1. Copy full canvas (top image + bottom bg)
+        frame = canvas_template.copy()
+
+        # 2. Draw karaoke highlight on bottom section
+        highlight_layer = Image.new("RGBA", (VIDEO_WIDTH, BOTTOM_HEIGHT), (0, 0, 0, 0))
+        draw_hl = ImageDraw.Draw(highlight_layer)
+        _draw_highlights_on_frame(draw_hl, word_timings, layout, line_bounds, HIGHLIGHT_COLOR, t)
+        frame.paste(highlight_layer, (0, TOP_HEIGHT), mask=highlight_layer)
+
+        # 3. Paste pre-rendered text overlay
+        frame.paste(text_rgba, (0, TOP_HEIGHT), mask=text_rgba)
+
+        return np.array(frame)
+
+    # ── COMPOSE & EXPORT ───────────────────────────────────────────────────
+    video = VideoClip(make_frame, duration=duration)
+    video = video.with_audio(audio_clip)
+
     # Đặt file tạm audio vào cùng thư mục output để tránh xung đột
-    # khi chạy nhiều terminal song song (mỗi project có file tạm riêng)
     temp_audio_path = out_path.parent / f"TEMP_MPY_{out_path.stem}_audio.m4a"
 
     progress_logger = SingleLineRenderLogger(label="RENDER", progress_callback=progress_callback)
     progress_logger.start()
 
     # Ưu tiên GPU (NVIDIA NVENC), fallback về CPU (libx264) nếu không hỗ trợ
+    write_kwargs = dict(
+        fps=30,
+        audio_codec="aac",
+        threads=4,
+        logger=progress_logger,
+        temp_audiofile=str(temp_audio_path),
+        ffmpeg_params=["-pix_fmt", "yuv420p"],
+    )
     try:
         print("[INFO] Attempting GPU render with h264_nvenc...")
-        final.write_videofile(
-            str(out_path),
-            fps=30,
-            codec="h264_nvenc",
-            audio_codec="aac",
-            threads=4,
-            logger=progress_logger,
-            temp_audiofile=str(temp_audio_path),
-        )
+        video.write_videofile(str(out_path), codec="h264_nvenc", **write_kwargs)
         print("[INFO] GPU render (h264_nvenc) successful.")
     except Exception as nvenc_err:
         print(f"\n[WARN] h264_nvenc failed ({nvenc_err}). Falling back to CPU (libx264)...")
-        # Reset progress bar cho lần render lại
         progress_logger = SingleLineRenderLogger(label="RENDER (CPU)", progress_callback=progress_callback)
         progress_logger.start()
-        final.write_videofile(
-            str(out_path),
-            fps=30,
-            codec="libx264",
-            audio_codec="aac",
-            threads=4,
-            logger=progress_logger,
-            temp_audiofile=str(temp_audio_path),
-        )
+        write_kwargs["logger"] = progress_logger
+        video.write_videofile(str(out_path), codec="libx264", **write_kwargs)
         print("[INFO] CPU render (libx264) successful.")
 
     progress_logger.finish()
