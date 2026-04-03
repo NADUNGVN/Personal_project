@@ -17,4 +17,4 @@ vibe-voice/output/
 vibe-voice/VibeVoice/
 vibe-voice/sample.txt
 
-make_short_video_youtube\src\short_video_image_fluent\output
+make_short_video_youtube/src/short_video_image_fluent/output

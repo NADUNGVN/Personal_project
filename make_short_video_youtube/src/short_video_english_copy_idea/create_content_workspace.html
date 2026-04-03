@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Content Workspace</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap");
+
+    :root {
+      --bg: #eef4f8;
+      --panel: rgba(255, 255, 255, 0.96);
+      --line: #d9e4ee;
+      --line-soft: #e7edf4;
+      --text: #172330;
+      --muted: #687a8d;
+      --blue: #2c8aff;
+      --blue-soft: rgba(44, 138, 255, 0.10);
+      --orange: #ff9b43;
+      --orange-soft: rgba(255, 155, 67, 0.12);
+      --shadow: 0 24px 60px rgba(39, 61, 86, 0.12);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      font-family: "Manrope", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(44, 138, 255, 0.12), transparent 24%),
+        linear-gradient(180deg, #f8fbfd 0%, var(--bg) 100%);
+    }
+
+    .shell {
+      width: min(1540px, calc(100vw - 24px));
+      height: calc(100vh - 24px);
+      margin: 12px auto;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: 32px;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--blue), #4da3ff);
+      color: #fff;
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-weight: 800;
+      box-shadow: 0 16px 28px rgba(44, 138, 255, 0.24);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: "Plus Jakarta Sans", sans-serif;
+      letter-spacing: -0.03em;
+    }
+
+    h1 { font-size: 30px; }
+    h2 { font-size: 18px; }
+    h3 { font-size: 16px; }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .nav {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .chip,
+    .button,
+    .small-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .chip.active,
+    .small-button.active {
+      color: var(--blue);
+      border-color: rgba(44, 138, 255, 0.34);
+      background: var(--blue-soft);
+    }
+
+    .button.primary {
+      color: #fff;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--blue), #4da3ff);
+      box-shadow: 0 14px 28px rgba(44, 138, 255, 0.20);
+    }
+
+    .small-button {
+      min-height: 36px;
+      padding: 0 12px;
+      font-size: 12px;
+    }
+
+    .workspace {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr) 320px;
+      gap: 14px;
+    }
+
+    .stack {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) minmax(250px, 0.55fr);
+      gap: 14px;
+    }
+
+    .panel {
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      background: var(--panel);
+      box-shadow: 0 16px 34px rgba(52, 78, 106, 0.08);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line-soft);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .panel-header .meta {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .panel-body {
+      min-height: 0;
+      padding: 14px;
+      overflow: auto;
+    }
+
+    .field-grid,
+    .session-list,
+    .library-list,
+    .timeline-mini {
+      display: grid;
+      gap: 10px;
+    }
+
+    .field,
+    .session-item,
+    .library-item,
+    .track-card,
+    .stats-card,
+    .dialogue-row {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, #ffffff, #f9fbfd);
+    }
+
+    .field {
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .field label,
+    .section-label {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 88px;
+      resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: rgba(44, 138, 255, 0.38);
+      box-shadow: 0 0 0 3px rgba(44, 138, 255, 0.10);
+    }
+
+    .session-list {
+      margin-top: 12px;
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .session-item {
+      padding: 12px;
+      cursor: pointer;
+      display: grid;
+      gap: 4px;
+    }
+
+    .session-item.active {
+      border-color: rgba(44, 138, 255, 0.34);
+      background: linear-gradient(180deg, rgba(44, 138, 255, 0.10), #ffffff);
+      box-shadow: inset 0 0 0 1px rgba(44, 138, 255, 0.10);
+    }
+
+    .session-title {
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .session-meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .editor-layout {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .hero-card {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, rgba(44, 138, 255, 0.06), #ffffff);
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .stats-card {
+      min-height: 70px;
+      padding: 12px;
+      display: grid;
+      gap: 4px;
+      align-content: center;
+    }
+
+    .stats-card strong {
+      font-size: 22px;
+      font-family: "Plus Jakarta Sans", sans-serif;
+    }
+
+    .composer-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .dialogue-list {
+      min-height: 0;
+      overflow: auto;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .dialogue-row {
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr) 94px 38px;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .speaker-chip {
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .speaker-chip.speaker-a {
+      color: var(--blue);
+      background: var(--blue-soft);
+    }
+
+    .speaker-chip.speaker-b {
+      color: #cc6a00;
+      background: var(--orange-soft);
+    }
+
+    .speaker-select {
+      min-height: 44px;
+    }
+
+    .time-box {
+      min-height: 44px;
+      border-radius: 14px;
+      background: rgba(23, 35, 48, 0.05);
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      padding: 8px;
+      text-align: center;
+    }
+
+    .icon-button {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .audio-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .wave-box {
+      min-height: 0;
+      overflow: hidden;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, #ffffff, #f7fbff);
+      display: grid;
+      grid-template-rows: auto auto auto minmax(72px, 1fr);
+      gap: 10px;
+    }
+
+    .wave-box strong {
+      font-size: 18px;
+    }
+
+    .wave {
+      min-height: 72px;
+      border-radius: 16px;
+      background:
+        linear-gradient(90deg, rgba(44, 138, 255, 0.18), rgba(44, 138, 255, 0.42), rgba(255, 155, 67, 0.24), rgba(44, 138, 255, 0.18)),
+        repeating-linear-gradient(90deg, transparent 0 8px, rgba(255, 255, 255, 0.55) 8px 10px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .wave::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 33px;
+      height: 6px;
+      background: rgba(23, 35, 48, 0.12);
+    }
+
+    .timeline-mini {
+      min-height: 0;
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      overflow: hidden;
+    }
+
+    .track-card {
+      min-height: 0;
+      overflow: hidden;
+      padding: 14px;
+      display: grid;
+      align-content: start;
+      gap: 6px;
+    }
+
+    .track-card strong {
+      font-size: 16px;
+    }
+
+    .track-card span,
+    .library-item span,
+    .field small,
+    .session-note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .library-list {
+      min-height: 0;
+      overflow: auto;
+      align-content: start;
+    }
+
+    .library-item {
+      padding: 14px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .library-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: rgba(23, 35, 48, 0.05);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .footer-actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <main class="shell" id="create-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">CI</div>
+        <div>
+          <h1>Create Content Workspace</h1>
+          <p>Structured content intake, two-speaker dialogue building, and audio handoff package.</p>
+        </div>
+      </div>
+      <div class="nav">
+        <span class="chip active">Create Workspace</span>
+        <span class="chip" id="sync-status">Draft not saved</span>
+        <a class="button" href="./edit_workspace.html" id="go-edit-button">Go To Edit Workspace</a>
+        <button class="button primary" type="button" id="save-draft-button">Save Draft</button>
+      </div>
+    </header>
+
+    <section class="workspace">
+      <article class="panel">
+        <div class="panel-header">
+          <h2>Project Setup</h2>
+          <span class="meta">Left workspace</span>
+        </div>
+        <div class="panel-body">
+          <div class="field-grid">
+            <div class="field">
+              <label for="project-picker">Stored projects</label>
+              <select id="project-picker"></select>
+              <div class="nav">
+                <button class="small-button active" id="new-project-button" type="button">New Project</button>
+                <button class="small-button" id="load-project-button" type="button">Load</button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="project-title">Project title</label>
+              <input id="project-title" type="text" value="English Progress Stories">
+            </div>
+            <div class="field">
+              <label for="difficulty">Difficulty</label>
+              <select id="difficulty">
+                <option>A2-B1</option>
+                <option>B1-B2</option>
+                <option>B2-C1</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="speaker-a-name">Speaker A</label>
+              <input id="speaker-a-name" type="text" value="Narrator">
+            </div>
+            <div class="field">
+              <label for="speaker-b-name">Speaker B</label>
+              <input id="speaker-b-name" type="text" value="Guide">
+            </div>
+          </div>
+
+          <div class="footer-actions">
+            <button class="small-button active" id="add-session-button">+ Add Session</button>
+            <button class="small-button" type="button">Import JSON</button>
+            <button class="small-button" type="button">Continue Project</button>
+          </div>
+
+          <div style="margin-top: 14px;" class="section-label">Sessions</div>
+          <div class="session-list" id="session-list"></div>
+        </div>
+      </article>
+
+      <div class="stack">
+        <article class="panel">
+          <div class="panel-header">
+            <h2>Script Composer</h2>
+            <span class="meta">Center top</span>
+          </div>
+          <div class="panel-body">
+            <div class="editor-layout">
+              <div class="hero-card">
+                <div class="field" style="padding: 0; border: 0; background: transparent;">
+                  <label for="session-title">Session title</label>
+                  <input id="session-title" type="text">
+                  <small class="session-note">One session can later become one short clip or one section inside the long video.</small>
+                </div>
+                <div class="stats-grid">
+                  <div class="stats-card">
+                    <span class="section-label">Words</span>
+                    <strong id="word-count">0</strong>
+                  </div>
+                  <div class="stats-card">
+                    <span class="section-label">Lines</span>
+                    <strong id="line-count">0</strong>
+                  </div>
+                  <div class="stats-card">
+                    <span class="section-label">Est. time</span>
+                    <strong id="duration-estimate">0s</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="composer-toolbar">
+                <div class="nav">
+                  <button class="small-button active" id="add-line-a">+ Speaker A</button>
+                  <button class="small-button" id="add-line-b">+ Speaker B</button>
+                </div>
+                <div class="nav">
+                  <span class="chip active" id="current-session-label">Session 1</span>
+                  <button class="small-button">Generate Audio Preview</button>
+                </div>
+              </div>
+
+              <div class="dialogue-list" id="dialogue-list"></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-header">
+            <h2>Final Audio Package</h2>
+            <span class="meta">Center bottom</span>
+          </div>
+          <div class="panel-body">
+            <div class="audio-grid">
+              <div class="wave-box">
+                <strong>Merged output</strong>
+                <p>`final_audio.wav` plus a clear timeline of who speaks and when.</p>
+                <div class="nav">
+                  <span class="chip active" id="package-speakers">2 speakers</span>
+                  <span class="chip" id="package-timeline">0 timeline rows</span>
+                </div>
+                <div class="wave"></div>
+              </div>
+
+              <div class="timeline-mini">
+                <div class="track-card">
+                  <strong>speaker_timeline.json</strong>
+                  <span id="timeline-summary">speaker_id, start_time, end_time, source_text, session_id</span>
+                </div>
+                <div class="track-card">
+                  <strong>Voice setup</strong>
+                  <span>Adam slow-clear preset, pause shaping, punctuation mode, preview cache</span>
+                </div>
+                <div class="track-card">
+                  <strong>Ready for editor</strong>
+                  <span>Subtitle logic, karaoke logic, and cut logic can reuse this package directly.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <article class="panel">
+        <div class="panel-header">
+          <h2>Generated Library</h2>
+          <span class="meta">Right workspace</span>
+        </div>
+        <div class="panel-body">
+          <div class="nav" style="margin-bottom: 12px;">
+            <span class="small-button active">Audio</span>
+            <span class="small-button">Videos</span>
+            <span class="small-button">Timeline</span>
+          </div>
+          <div class="library-list" id="library-list"></div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    class CreateContentWorkspaceApp {
+      constructor(root) {
+        this.root = root;
+        this.projectsKey = "copyidea.projects";
+        this.activeProjectKey = "copyidea.activeProjectId";
+        this.legacyPackageKey = "copyidea.contentPackage";
+        this.wordPerMinute = 118;
+        this.state = this.createDefaultState();
+
+        const bootstrap = this.loadBootstrapProject();
+        this.currentProjectId = bootstrap.projectId;
+        this.state = bootstrap.state;
+        this.hydrateCounters();
+
+        this.cacheElements();
+        this.bindEvents();
+        this.render("Workspace ready");
+      }
+
+      createDefaultState() {
+        return {
+          projectTitle: "English Progress Stories",
+          difficulty: "A2-B1",
+          speakerAName: "Narrator",
+          speakerBName: "Guide",
+          selectedSessionId: "session-1",
+          sessions: [
+            {
+              id: "session-1",
+              title: "Why progress feels invisible",
+              lines: [
+                { id: "line-1", speaker: "A", text: "Today we are talking about the strange feeling of studying every day but not seeing results." },
+                { id: "line-2", speaker: "B", text: "That feeling is common, because progress usually appears in small changes before it becomes obvious." },
+                { id: "line-3", speaker: "A", text: "This session should sound calm, slow, and clear so the final audio can be reused in long and short videos." }
+              ]
+            },
+            {
+              id: "session-2",
+              title: "How to keep learning anyway",
+              lines: [
+                { id: "line-4", speaker: "B", text: "The most important thing is to keep a structure that is simple enough to repeat every day." },
+                { id: "line-5", speaker: "A", text: "Even ten focused minutes can be enough when the habit is stable." },
+                { id: "line-6", speaker: "B", text: "That is why this workspace stores both the dialogue content and the timing package." }
+              ]
+            }
+          ],
+          library: [
+            { type: "audio", title: "2026-03-10 / final_audio.wav", meta: "12 dialogue rows, Adam slow-clear, generated 11:28" },
+            { type: "timeline", title: "2026-03-10 / speaker_timeline.json", meta: "speaker ids, start/end time, session boundaries" },
+            { type: "video", title: "2026-03-09 / long_video_9x16.mp4", meta: "derived from the same content package" },
+            { type: "video", title: "2026-03-09 / short_session_02.mp4", meta: "short clip cut from session 2" }
+          ]
+        };
+      }
+
+      createDefaultEditorState() {
+        return {
+          currentOutput: "Long 9:16",
+          currentPreview: "Long 9:16",
+          selectedAssetId: null,
+          assets: [],
+          clips: [],
+        };
+      }
+
+      clone(value) {
+        return JSON.parse(JSON.stringify(value));
+      }
+
+      generateProjectId() {
+        return `project-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      }
+
+      getStoredProjects() {
+        try {
+          const raw = window.localStorage.getItem(this.projectsKey);
+          const parsed = raw ? JSON.parse(raw) : [];
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+          return [];
+        }
+      }
+
+      setStoredProjects(projects) {
+        window.localStorage.setItem(this.projectsKey, JSON.stringify(projects));
+      }
+
+      setActiveProjectId(projectId) {
+        window.localStorage.setItem(this.activeProjectKey, projectId);
+      }
+
+      normalizeState(state) {
+        const fallback = this.createDefaultState();
+        const sessions = Array.isArray(state?.sessions) && state.sessions.length
+          ? state.sessions.map((session, sessionIndex) => ({
+              id: session.id || `session-${sessionIndex + 1}`,
+              title: session.title || `Session ${sessionIndex + 1}`,
+              lines: Array.isArray(session.lines) && session.lines.length
+                ? session.lines.map((line, lineIndex) => ({
+                    id: line.id || `line-${sessionIndex + 1}-${lineIndex + 1}`,
+                    speaker: line.speaker === "B" ? "B" : "A",
+                    text: line.text || "Add dialogue here."
+                  }))
+                : [{ id: `line-${sessionIndex + 1}-1`, speaker: "A", text: "Add dialogue here." }]
+            }))
+          : fallback.sessions;
+
+        const selectedSessionId = sessions.some((session) => session.id === state?.selectedSessionId)
+          ? state.selectedSessionId
+          : sessions[0].id;
+
+        return {
+          projectTitle: state?.projectTitle || fallback.projectTitle,
+          difficulty: state?.difficulty || fallback.difficulty,
+          speakerAName: state?.speakerAName || fallback.speakerAName,
+          speakerBName: state?.speakerBName || fallback.speakerBName,
+          selectedSessionId,
+          sessions,
+          library: Array.isArray(state?.library) ? state.library : fallback.library,
+        };
+      }
+
+      hydrateCounters() {
+        const sessionIds = this.state.sessions
+          .map((session) => Number(session.id.match(/session-(\d+)/)?.[1] || 0));
+        const lineIds = this.state.sessions
+          .flatMap((session) => session.lines)
+          .map((line) => Number(line.id.match(/line-(\d+)/)?.[1] || 0));
+
+        this.sessionCounter = Math.max(2, ...sessionIds) + 1;
+        this.lineCounter = Math.max(6, ...lineIds) + 1;
+      }
+
+      loadBootstrapProject() {
+        const projects = this.getStoredProjects();
+        const activeProjectId = window.localStorage.getItem(this.activeProjectKey);
+        const activeProject = projects.find((project) => project.id === activeProjectId) || projects[0];
+
+        if (!activeProject) {
+          return {
+            projectId: this.generateProjectId(),
+            state: this.createDefaultState()
+          };
+        }
+
+        return {
+          projectId: activeProject.id,
+          state: this.normalizeState(activeProject.contentState)
+        };
+      }
+
+      cacheElements() {
+        this.projectPickerEl = this.root.querySelector("#project-picker");
+        this.newProjectButton = this.root.querySelector("#new-project-button");
+        this.loadProjectButton = this.root.querySelector("#load-project-button");
+        this.projectTitleInput = this.root.querySelector("#project-title");
+        this.difficultyInput = this.root.querySelector("#difficulty");
+        this.speakerANameInput = this.root.querySelector("#speaker-a-name");
+        this.speakerBNameInput = this.root.querySelector("#speaker-b-name");
+        this.sessionTitleInput = this.root.querySelector("#session-title");
+        this.sessionListEl = this.root.querySelector("#session-list");
+        this.dialogueListEl = this.root.querySelector("#dialogue-list");
+        this.libraryListEl = this.root.querySelector("#library-list");
+        this.wordCountEl = this.root.querySelector("#word-count");
+        this.lineCountEl = this.root.querySelector("#line-count");
+        this.durationEstimateEl = this.root.querySelector("#duration-estimate");
+        this.currentSessionLabelEl = this.root.querySelector("#current-session-label");
+        this.packageSpeakersEl = this.root.querySelector("#package-speakers");
+        this.packageTimelineEl = this.root.querySelector("#package-timeline");
+        this.timelineSummaryEl = this.root.querySelector("#timeline-summary");
+        this.syncStatusEl = this.root.querySelector("#sync-status");
+        this.saveDraftButton = this.root.querySelector("#save-draft-button");
+        this.goEditButton = this.root.querySelector("#go-edit-button");
+      }
+
+      bindEvents() {
+        this.projectPickerEl.addEventListener("change", () => {
+          this.loadProjectButton.classList.toggle("active", this.projectPickerEl.value !== this.currentProjectId);
+        });
+
+        this.newProjectButton.addEventListener("click", () => this.createNewProject());
+        this.loadProjectButton.addEventListener("click", () => this.loadProjectById(this.projectPickerEl.value));
+
+        this.projectTitleInput.addEventListener("input", (event) => {
+          this.state.projectTitle = event.target.value;
+          this.syncPackageViews();
+        });
+
+        this.difficultyInput.addEventListener("change", (event) => {
+          this.state.difficulty = event.target.value;
+          this.syncPackageViews();
+        });
+
+        this.speakerANameInput.addEventListener("input", (event) => {
+          this.state.speakerAName = event.target.value || "Speaker A";
+          this.syncPackageViews();
+        });
+
+        this.speakerBNameInput.addEventListener("input", (event) => {
+          this.state.speakerBName = event.target.value || "Speaker B";
+          this.syncPackageViews();
+        });
+
+        this.sessionTitleInput.addEventListener("input", (event) => {
+          const session = this.getSelectedSession();
+          if (!session) {
+            return;
+          }
+          session.title = event.target.value || "Untitled Session";
+          this.currentSessionLabelEl.textContent = session.title;
+          this.syncPackageViews();
+        });
+
+        this.root.querySelector("#add-session-button").addEventListener("click", () => this.addSession());
+        this.root.querySelector("#add-line-a").addEventListener("click", () => this.addLine("A"));
+        this.root.querySelector("#add-line-b").addEventListener("click", () => this.addLine("B"));
+        this.saveDraftButton.addEventListener("click", () => this.savePackage("Draft saved"));
+        this.goEditButton.addEventListener("click", (event) => {
+          event.preventDefault();
+          this.savePackage("Saved and opened editor");
+          window.location.href = this.goEditButton.href;
+        });
+      }
+
+      getSelectedSession() {
+        return this.state.sessions.find((session) => session.id === this.state.selectedSessionId) || null;
+      }
+
+      getProjectRecord(projectId, projects = this.getStoredProjects()) {
+        return projects.find((project) => project.id === projectId) || null;
+      }
+
+      countWords(text) {
+        const matches = text.match(/[A-Za-z][A-Za-z'-]*/g);
+        return matches ? matches.length : 0;
+      }
+
+      estimateDuration(wordCount) {
+        if (!wordCount) {
+          return "0s";
+        }
+        const totalSeconds = Math.round((wordCount / this.wordPerMinute) * 60);
+        if (totalSeconds < 60) {
+          return `${totalSeconds}s`;
+        }
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = String(totalSeconds % 60).padStart(2, "0");
+        return `${minutes}m ${seconds}s`;
+      }
+
+      buildLineWindow(index) {
+        const session = this.getSelectedSession();
+        if (!session) {
+          return "00:00";
+        }
+        const prefixWordCount = session.lines
+          .slice(0, index)
+          .reduce((sum, line) => sum + this.countWords(line.text), 0);
+        const currentWordCount = this.countWords(session.lines[index].text);
+        const startSeconds = Math.round((prefixWordCount / this.wordPerMinute) * 60);
+        const endSeconds = Math.round(((prefixWordCount + currentWordCount) / this.wordPerMinute) * 60);
+        return `${this.formatSeconds(startSeconds)}\n${this.formatSeconds(endSeconds)}`;
+      }
+
+      formatSeconds(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = String(seconds % 60).padStart(2, "0");
+        return `${String(mins).padStart(2, "0")}:${secs}`;
+      }
+
+      buildPackage() {
+        let cursorSeconds = 0;
+        const sessions = this.state.sessions.map((session, sessionIndex) => {
+          const lines = session.lines.map((line) => {
+            const wordCount = this.countWords(line.text);
+            const durationSeconds = Math.max(2, Math.round((wordCount / this.wordPerMinute) * 60));
+            const timelineLine = {
+              id: line.id,
+              speaker: line.speaker,
+              speakerName: line.speaker === "A" ? this.state.speakerAName : this.state.speakerBName,
+              text: line.text,
+              start: cursorSeconds,
+              end: cursorSeconds + durationSeconds,
+              durationSeconds,
+            };
+            cursorSeconds += durationSeconds;
+            return timelineLine;
+          });
+
+          return {
+            id: session.id,
+            title: session.title,
+            sessionIndex: sessionIndex + 1,
+            lines,
+            wordCount: this.countWords(lines.map((line) => line.text).join(" ")),
+            start: lines[0]?.start ?? 0,
+            end: lines[lines.length - 1]?.end ?? 0,
+            durationSeconds: Math.max(0, (lines[lines.length - 1]?.end ?? 0) - (lines[0]?.start ?? 0)),
+          };
+        });
+
+        const totalWordCount = sessions.reduce((sum, session) => sum + session.wordCount, 0);
+        const totalLines = sessions.reduce((sum, session) => sum + session.lines.length, 0);
+
+        return {
+          version: 1,
+          generatedAt: new Date().toISOString(),
+          projectId: this.currentProjectId,
+          projectTitle: this.state.projectTitle,
+          difficulty: this.state.difficulty,
+          speakers: {
+            A: this.state.speakerAName,
+            B: this.state.speakerBName,
+          },
+          totalWordCount,
+          totalLines,
+          totalDurationSeconds: cursorSeconds,
+          sessions,
+        };
+      }
+
+      renderProjectPicker(projects = this.getStoredProjects()) {
+        this.projectPickerEl.innerHTML = "";
+
+        if (!projects.length) {
+          const emptyOption = document.createElement("option");
+          emptyOption.textContent = "No saved project";
+          this.projectPickerEl.appendChild(emptyOption);
+          this.projectPickerEl.disabled = true;
+          this.loadProjectButton.disabled = true;
+          return;
+        }
+
+        this.projectPickerEl.disabled = false;
+        this.loadProjectButton.disabled = false;
+
+        projects
+          .slice()
+          .sort((left, right) => new Date(right.updatedAt || 0) - new Date(left.updatedAt || 0))
+          .forEach((project) => {
+            const option = document.createElement("option");
+            option.value = project.id;
+            const stamp = project.updatedAt
+              ? new Date(project.updatedAt).toLocaleString([], { month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+              : "draft";
+            option.textContent = `${project.title || "Untitled Project"} - ${stamp}`;
+            this.projectPickerEl.appendChild(option);
+          });
+
+        this.projectPickerEl.value = this.currentProjectId;
+        this.loadProjectButton.classList.toggle("active", false);
+      }
+
+      persistCurrentProject(statusText = "Draft saved", payload = null) {
+        const packageData = payload || this.buildPackage();
+        const projects = this.getStoredProjects();
+        const currentIndex = projects.findIndex((project) => project.id === this.currentProjectId);
+        const existingRecord = currentIndex >= 0 ? projects[currentIndex] : null;
+
+        const record = {
+          id: this.currentProjectId || this.generateProjectId(),
+          title: this.state.projectTitle || "Untitled Project",
+          updatedAt: new Date().toISOString(),
+          contentState: this.clone(this.state),
+          package: packageData,
+          editorState: existingRecord?.editorState || this.createDefaultEditorState(),
+        };
+
+        if (currentIndex >= 0) {
+          projects[currentIndex] = record;
+        } else {
+          projects.push(record);
+        }
+
+        this.currentProjectId = record.id;
+        this.setStoredProjects(projects);
+        this.setActiveProjectId(record.id);
+        window.localStorage.setItem(this.legacyPackageKey, JSON.stringify(packageData));
+
+        this.renderProjectPicker(projects);
+        this.syncStatusEl.textContent = statusText;
+        return record;
+      }
+
+      savePackage(statusText = "Draft saved") {
+        const payload = this.buildPackage();
+        this.renderLibrary(payload);
+        this.persistCurrentProject(statusText, payload);
+        return payload;
+      }
+
+      syncPackageViews(statusText = "Auto-saved") {
+        const payload = this.buildPackage();
+        this.renderSessions();
+        this.renderHeaderStats();
+        this.renderAudioPackage(payload);
+        this.renderLibrary(payload);
+        this.persistCurrentProject(statusText, payload);
+        return payload;
+      }
+
+      createNewProject() {
+        const existingCount = this.getStoredProjects().length + 1;
+        this.currentProjectId = this.generateProjectId();
+        this.state = this.createDefaultState();
+        this.state.projectTitle = `English Progress Stories ${existingCount}`;
+        this.hydrateCounters();
+        this.render("New project created");
+      }
+
+      loadProjectById(projectId) {
+        const record = this.getProjectRecord(projectId);
+        if (!record) {
+          return;
+        }
+        this.currentProjectId = record.id;
+        this.state = this.normalizeState(record.contentState);
+        this.hydrateCounters();
+        this.render("Project loaded");
+      }
+
+      addSession() {
+        const newId = `session-${this.sessionCounter++}`;
+        this.state.sessions.push({
+          id: newId,
+          title: `New Session ${this.state.sessions.length + 1}`,
+          lines: [
+            {
+              id: `line-${this.lineCounter++}`,
+              speaker: "A",
+              text: "Add the first dialogue line here."
+            }
+          ]
+        });
+        this.state.selectedSessionId = newId;
+        this.render();
+      }
+
+      addLine(speaker) {
+        const session = this.getSelectedSession();
+        if (!session) {
+          return;
+        }
+        session.lines.push({
+          id: `line-${this.lineCounter++}`,
+          speaker,
+          text: speaker === "A" ? "New line for speaker A." : "New line for speaker B."
+        });
+        this.render();
+      }
+
+      removeLine(lineId) {
+        const session = this.getSelectedSession();
+        if (!session || session.lines.length === 1) {
+          return;
+        }
+        session.lines = session.lines.filter((line) => line.id !== lineId);
+        this.render();
+      }
+
+      renderSessions() {
+        this.sessionListEl.innerHTML = "";
+        this.state.sessions.forEach((session, index) => {
+          const item = document.createElement("button");
+          item.type = "button";
+          item.className = `session-item${session.id === this.state.selectedSessionId ? " active" : ""}`;
+          item.innerHTML = `
+            <span class="session-title">${session.title}</span>
+            <span class="session-meta">Session ${index + 1} - ${session.lines.length} lines - ${this.countWords(session.lines.map((line) => line.text).join(" "))} words</span>
+          `;
+          item.addEventListener("click", () => {
+            this.state.selectedSessionId = session.id;
+            this.render();
+          });
+          this.sessionListEl.appendChild(item);
+        });
+      }
+
+      renderDialogue() {
+        const session = this.getSelectedSession();
+        if (!session) {
+          return;
+        }
+
+        this.sessionTitleInput.value = session.title;
+        this.currentSessionLabelEl.textContent = session.title;
+        this.dialogueListEl.innerHTML = "";
+
+        session.lines.forEach((line, index) => {
+          const row = document.createElement("div");
+          row.className = "dialogue-row";
+          row.innerHTML = `
+            <select class="speaker-select">
+              <option value="A"${line.speaker === "A" ? " selected" : ""}>${this.state.speakerAName}</option>
+              <option value="B"${line.speaker === "B" ? " selected" : ""}>${this.state.speakerBName}</option>
+            </select>
+            <textarea>${line.text}</textarea>
+            <div class="time-box">${this.buildLineWindow(index).replace("\n", "<br>")}</div>
+            <button class="icon-button" title="Delete line">&times;</button>
+          `;
+
+          const select = row.querySelector("select");
+          const textarea = row.querySelector("textarea");
+          const timeBox = row.querySelector(".time-box");
+          const removeButton = row.querySelector(".icon-button");
+
+          const updateSpeakerTone = () => {
+            select.classList.remove("speaker-chip", "speaker-a", "speaker-b");
+            select.classList.add("speaker-chip", select.value === "A" ? "speaker-a" : "speaker-b");
+          };
+
+          updateSpeakerTone();
+
+          select.addEventListener("change", () => {
+            line.speaker = select.value;
+            updateSpeakerTone();
+            this.syncPackageViews();
+          });
+
+          textarea.addEventListener("input", () => {
+            line.text = textarea.value;
+            timeBox.innerHTML = this.buildLineWindow(index).replace("\n", "<br>");
+            this.syncPackageViews();
+          });
+
+          removeButton.addEventListener("click", () => this.removeLine(line.id));
+          this.dialogueListEl.appendChild(row);
+        });
+      }
+
+      renderHeaderStats() {
+        const session = this.getSelectedSession();
+        if (!session) {
+          return;
+        }
+        const fullText = session.lines.map((line) => line.text).join(" ");
+        const wordCount = this.countWords(fullText);
+        this.wordCountEl.textContent = String(wordCount);
+        this.lineCountEl.textContent = String(session.lines.length);
+        this.durationEstimateEl.textContent = this.estimateDuration(wordCount);
+      }
+
+      renderAudioPackage(packageData = null) {
+        const session = this.getSelectedSession();
+        if (!session) {
+          return;
+        }
+        const payload = packageData || this.buildPackage();
+        const selectedPackageSession = payload.sessions.find((item) => item.id === session.id);
+        const speakerSet = new Set(session.lines.map((line) => line.speaker));
+        this.packageSpeakersEl.textContent = `${speakerSet.size} speaker${speakerSet.size > 1 ? "s" : ""}`;
+        this.packageTimelineEl.textContent = `${payload.totalLines} timeline rows`;
+        this.timelineSummaryEl.textContent = (selectedPackageSession?.lines || [])
+          .map((line) => `${line.speaker}:${this.formatSeconds(line.start)}`)
+          .join(" | ");
+      }
+
+      renderLibrary(packageData = null) {
+        const payload = packageData || this.buildPackage();
+        const dynamicLibrary = [
+          {
+            type: "audio",
+            title: `${payload.projectTitle} / final_audio.wav`,
+            meta: `${payload.totalLines} dialogue rows, ${payload.totalWordCount} words, ${this.estimateDuration(payload.totalWordCount)}`
+          },
+          {
+            type: "timeline",
+            title: `${payload.projectTitle} / speaker_timeline.json`,
+            meta: `${payload.sessions.length} sessions, ${payload.totalDurationSeconds}s total timeline duration`
+          },
+          ...this.state.library
+        ];
+        this.libraryListEl.innerHTML = "";
+        dynamicLibrary.forEach((item) => {
+          const node = document.createElement("div");
+          node.className = "library-item";
+          node.innerHTML = `
+            <div class="library-top">
+              <strong>${item.title}</strong>
+              <span class="pill">${item.type}</span>
+            </div>
+            <span>${item.meta}</span>
+          `;
+          this.libraryListEl.appendChild(node);
+        });
+      }
+
+      render(statusText = "Auto-saved") {
+        this.projectTitleInput.value = this.state.projectTitle;
+        this.difficultyInput.value = this.state.difficulty;
+        this.speakerANameInput.value = this.state.speakerAName;
+        this.speakerBNameInput.value = this.state.speakerBName;
+
+        const payload = this.buildPackage();
+        this.renderSessions();
+        this.renderDialogue();
+        this.renderHeaderStats();
+        this.renderAudioPackage(payload);
+        this.renderLibrary(payload);
+        this.persistCurrentProject(statusText, payload);
+      }
+    }
+
+    new CreateContentWorkspaceApp(document.getElementById("create-shell"));
+  </script>
+</body>
+</html>
+
+

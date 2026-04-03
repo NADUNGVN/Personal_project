@@ -4,11 +4,15 @@ import json
 import csv
 import soundfile as sf
 import shutil
+import warnings
 from datetime import datetime
 from typing import Dict, List
 import imageio_ffmpeg
 from pydub import AudioSegment
 from pydub.silence import detect_leading_silence
+
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
 
 # Explicitly tell pydub where to find ffmpeg via imageio_ffmpeg
 ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
@@ -38,19 +42,19 @@ from kokoro import KPipeline
 # ================= VOICE CONFIGURATION =================
 VOICE_MAP = {
     "Alex": "am_puck",      # Host 1
-    "Sarah": "af_bella",    # Host 2
+    "Sarah": "af_heart",    # Host 2
     "Michael": "am_michael",# Roleplay Male 1
-    "Nicole": "af_heart",   # Roleplay Female 1
+    "Nicole": "af_bella",   # Roleplay Female 1
     "Adam": "am_adam",      # Roleplay Male 2
     "Sky": "af_sky"         # Roleplay Female 2
 }
 SPEED_MAP = {
-    "Alex": 1.0,
+    "Alex": 0.85,
     "Sarah": 0.85,
-    "Michael": 1.0,
-    "Nicole": 1.0,
-    "Adam": 1.0,
-    "Sky": 1.0
+    "Michael": 0.85,
+    "Nicole": 0.85,
+    "Adam": 0.85,
+    "Sky": 0.85
 }
 # Fallback voice if speaker not in map (should not happen with new prompt constraints)
 DEFAULT_VOICE = "af_sky"

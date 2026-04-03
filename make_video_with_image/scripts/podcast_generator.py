@@ -67,7 +67,7 @@ CRITICAL OUTPUT RULES:
 4. For dialogue items, generate:
    - `text_display`: Clean, grammatically correct text for on-screen karaoke display.
    - `text_tts`: Text with TTS directing markup for natural Kokoro speech:
-     * Use `[word](+2)` to EMPHASIZE key words (spoken louder/slower)
+     * Use `[word](+2)` to EMPHASIZE ALMOST EVERY SINGLE WORD (spoken louder/slower)
      * Use `[word](-1)` to DE-STRESS filler words (spoken lighter/faster): [just](-1), [like](-1), [oh](-1)
      * Use commas `,`, ellipses `...`, dashes `—` for natural pacing/pauses
      * Use `!` for excitement, `?` for rising intonation
@@ -462,6 +462,12 @@ def generate_segment(segment_config: dict, topic: str, accumulated_text: str) ->
                 text = text[:-3]
             
             segment_data = json.loads(text.strip())
+            
+            # Clean up potential LLM leaks in text_display (e.g., [word](+2) -> word)
+            import re
+            for item in segment_data.get("script", []):
+                if "text_display" in item:
+                    item["text_display"] = re.sub(r'\[([^\]]+)\]\([+-]?\d+\)', r'\1', item["text_display"])
             
             # Validate
             errors = validate_segment(segment_data, segment_config)

@@ -1,0 +1,216 @@
+﻿import json
+import subprocess
+import sys
+from pathlib import Path
+
+FLOW_NEW = "1"
+FLOW_CONTINUE = "2"
+
+
+def run_step(script_path: Path, extra_args: list[str] | None = None):
+    print(f"\n{'=' * 80}")
+    print(f"Running: {script_path.name}")
+    print(f"{'=' * 80}\n")
+
+    command = [sys.executable, str(script_path)]
+    if extra_args:
+        command.extend(extra_args)
+
+    result = subprocess.run(command, cwd=str(script_path.parent.parent.parent))
+
+    if result.returncode != 0:
+        print(f"\nPipeline stopped: {script_path.name} failed with exit code {result.returncode}.")
+        sys.exit(result.returncode)
+
+
+def prompt_required(prompt_text: str) -> str:
+    while True:
+        value = input(prompt_text).strip()
+        if value:
+            return value
+        print("Input cannot be empty. Please try again.")
+
+
+def choose_flow_mode() -> str:
+    print("\nSelect pipeline action:")
+    print("1) Create new project")
+    print("2) Continue existing project by path")
+    while True:
+        choice = input("Choose action (1/2): ").strip()
+        if choice in {FLOW_NEW, FLOW_CONTINUE}:
+            return choice
+        print("Invalid choice. Please enter 1 or 2.")
+
+
+def clean_user_path(raw_path: str) -> Path:
+    cleaned = raw_path.strip().strip('"').strip("'")
+    return Path(cleaned).expanduser().resolve()
+
+
+def prompt_project_dir() -> Path:
+    while True:
+        raw = prompt_required("Enter existing project folder path: ")
+        path = clean_user_path(raw)
+        if not path.exists():
+            print(f"Path does not exist: {path}")
+            continue
+        if not path.is_dir():
+            print(f"Path is not a folder: {path}")
+            continue
+        return path
+
+
+def is_nonempty_file(path: Path) -> bool:
+    try:
+        return path.exists() and path.is_file() and path.stat().st_size > 0
+    except OSError:
+        return False
+
+
+def load_json_file(path: Path) -> dict | None:
+    if not is_nonempty_file(path):
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def check_step1(project_dir: Path) -> tuple[bool, str]:
+    content_path = project_dir / "01_content" / "content.json"
+    data = load_json_file(content_path)
+    if data is None:
+        return False, "Missing/invalid 01_content/content.json"
+
+    required = ("topic", "title_en", "text_en", "difficulty")
+    missing = [k for k in required if not isinstance(data.get(k), str) or not data.get(k, "").strip()]
+    if missing:
+        return False, f"content.json missing required fields: {missing}"
+    return True, "Step 1 completed"
+
+
+def check_step2(project_dir: Path) -> tuple[bool, str]:
+    wav_path = project_dir / "02_audio" / "audio.wav"
+    if not is_nonempty_file(wav_path):
+        return False, "Missing/invalid 02_audio/audio.wav"
+    return True, "Step 2 completed"
+
+
+def check_step3(project_dir: Path) -> tuple[bool, str]:
+    video_16 = project_dir / "03_video" / "long_video_16x9.mp4"
+    video_9 = project_dir / "03_video" / "long_video_9x16.mp4"
+    status_path = project_dir / "03_video" / "render_status.json"
+
+    if not is_nonempty_file(video_16) or not is_nonempty_file(video_9):
+        return False, "Missing/invalid long outputs in 03_video"
+
+    status = load_json_file(status_path)
+    if status is None:
+        return False, "Missing/invalid 03_video/render_status.json (cannot confirm render reached 100%)"
+
+    is_completed = status.get("status") == "completed"
+    is_success = bool(status.get("success"))
+    progress = int(status.get("progress_percent", 0) or 0)
+    if is_completed and is_success and progress >= 100:
+        return True, "Step 3 completed (render 100%)"
+
+    return False, f"Render status is not completed: status={status.get('status')}, progress={progress}%"
+
+
+def check_step4(project_dir: Path) -> tuple[bool, str]:
+    manifest_path = project_dir / "04_outputs" / "outputs_manifest.json"
+    status_path = project_dir / "04_outputs" / "output_status.json"
+    if not is_nonempty_file(manifest_path) or not is_nonempty_file(status_path):
+        return False, "Missing/invalid 04_outputs manifest/status"
+    return True, "Step 4 completed"
+
+
+def inspect_steps(project_dir: Path) -> dict[int, tuple[bool, str]]:
+    return {
+        1: check_step1(project_dir),
+        2: check_step2(project_dir),
+        3: check_step3(project_dir),
+        4: check_step4(project_dir),
+    }
+
+
+def determine_next_step(step_checks: dict[int, tuple[bool, str]]) -> int | None:
+    for step_idx in (1, 2, 3, 4):
+        if not step_checks[step_idx][0]:
+            return step_idx
+    return None
+
+
+def print_step_report(step_checks: dict[int, tuple[bool, str]]) -> None:
+    print("\nProject step inspection:")
+    for step_idx in (1, 2, 3, 4):
+        ok, detail = step_checks[step_idx]
+        status = "DONE" if ok else "PENDING"
+        print(f"- Step {step_idx}: {status} | {detail}")
+
+
+def run_new_pipeline(step1: Path, step2: Path, step3: Path, step4: Path) -> None:
+    # Step 1 now supports multi-session interactive input directly.
+    run_step(step1)
+    run_step(step2)
+    run_step(step3)
+    run_step(step4)
+
+
+def run_continue_pipeline(project_dir: Path, step2: Path, step3: Path, step4: Path) -> bool:
+    step_checks = inspect_steps(project_dir)
+    print_step_report(step_checks)
+
+    next_step = determine_next_step(step_checks)
+    if next_step is None:
+        print("\nAll steps are already completed for this project.")
+        return True
+
+    if next_step == 1:
+        print("\nCannot continue from Step 1 with existing folder.")
+        print("Please choose 'Create new project' to generate Step 1 content.")
+        return False
+
+    print(f"\nContinuing from Step {next_step} for project: {project_dir}")
+
+    if next_step <= 2:
+        run_step(step2, ["--project-dir", str(project_dir)])
+    if next_step <= 3:
+        run_step(step3, ["--project-dir", str(project_dir)])
+    if next_step <= 4:
+        run_step(step4, ["--project-dir", str(project_dir)])
+    return True
+
+
+def main():
+    root_dir = Path(__file__).resolve().parent
+
+    step1 = root_dir / "step1_generate_content.py"
+    step2 = root_dir / "step2_generate_audio.py"
+    step3 = root_dir / "step3_generate_video.py"
+    step4 = root_dir / "step4_generate_metadata.py"
+
+    if not step1.exists() or not step2.exists() or not step3.exists() or not step4.exists():
+        print("Could not find all pipeline scripts in the current directory.")
+        sys.exit(1)
+
+    print("SocialHarvester - short_video_english_copy_idea")
+    flow_mode = choose_flow_mode()
+
+    success = True
+    if flow_mode == FLOW_NEW:
+        run_new_pipeline(step1, step2, step3, step4)
+    else:
+        project_dir = prompt_project_dir()
+        success = run_continue_pipeline(project_dir, step2, step3, step4)
+
+    if success:
+        print(f"\n{'=' * 80}")
+        print("Pipeline completed successfully.")
+        print(f"{'=' * 80}")
+    else:
+        print("\nPipeline was not executed because the selected project is not ready to continue.")
+
+
+if __name__ == "__main__":
+    main()

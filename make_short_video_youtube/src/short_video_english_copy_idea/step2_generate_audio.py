@@ -1,0 +1,176 @@
+import argparse
+import json
+import os
+import sys
+import re
+from pathlib import Path
+from datetime import datetime
+
+import soundfile as sf
+from pydub import AudioSegment
+from pydub.silence import detect_leading_silence
+
+# Need imageio_ffmpeg for pydub to know where ffmpeg is
+import imageio_ffmpeg
+ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+AudioSegment.converter = ffmpeg_exe
+
+# Import Kokoro
+try:
+    from kokoro import KPipeline
+except ImportError:
+    raise SystemExit("Error: kokoro library not found. Have you activated the virtual environment?")
+
+APP_NAME = "SocialHarvester CopyIdea"
+APP_STEP = "Step 2: Generate Audio (Kokoro Adam - Slow & Clear)"
+APP_VERSION = "1.0.0"
+
+DEFAULT_VOICE = "am_adam"
+DEFAULT_SPEED = 0.62
+DEFAULT_READING_STYLE = "spaced"
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Generate TTS audio using Kokoro for a given short video project.")
+    parser.add_argument("--project-dir", type=Path, help="Path to the specific project directory (e.g., output/short_video/topic_name/20260307_090858)")
+    parser.add_argument("--voice", default=DEFAULT_VOICE, help=f"Kokoro voice preset to use (default: {DEFAULT_VOICE})")
+    parser.add_argument("--speed", type=float, default=DEFAULT_SPEED, help=f"Speech speed (default: {DEFAULT_SPEED})")
+    parser.add_argument(
+        "--reading-style",
+        choices=["normal", "spaced"],
+        default=DEFAULT_READING_STYLE,
+        help="normal=keep text as-is, spaced=insert pauses between words for clearer articulation",
+    )
+    return parser.parse_args()
+
+
+def prepare_text_for_reading(text: str, style: str) -> str:
+    cleaned = re.sub(r"\s+", " ", text).strip()
+    if style == "spaced":
+        words = cleaned.split()
+        if words:
+            return ", ".join(words)
+    return cleaned
+
+def resolve_latest_project_dir(base_output_dir: Path) -> Path:
+    """Finds the most recently created project directory containing an 01_content/content.json"""
+    candidates = []
+    if base_output_dir.exists():
+        for topic_dir in base_output_dir.iterdir():
+            if topic_dir.is_dir():
+                for proj_dir in topic_dir.iterdir():
+                    if proj_dir.is_dir() and (proj_dir / "01_content" / "content.json").exists():
+                        candidates.append(proj_dir)
+    
+    if not candidates:
+        raise RuntimeError(f"No valid project directories found in {base_output_dir}")
+    
+    candidates.sort(key=lambda p: p.stat().st_ctime, reverse=True)
+    return candidates[0]
+
+def main():
+    print(f"{APP_NAME} - {APP_STEP} (v{APP_VERSION})")
+    args = parse_args()
+    
+    script_dir = Path(__file__).resolve().parent
+    project_root = script_dir.parents[1] # make_short_video_youtube
+    base_output_dir = script_dir / "output" / "short_video"
+    
+    proj_dir = args.project_dir
+    if not proj_dir:
+        print("[INFO] No --project-dir provided. Resolving latest project...")
+        try:
+            proj_dir = resolve_latest_project_dir(base_output_dir)
+        except Exception as e:
+            raise SystemExit(f"Failed to resolve latest project: {e}")
+            
+    proj_dir = proj_dir.resolve()
+    print(f"[INFO] Target Project: {proj_dir}")
+    
+    content_file = proj_dir / "01_content" / "content.json"
+    if not content_file.exists():
+        raise SystemExit(f"Error: content.json not found at {content_file}")
+        
+    with open(content_file, "r", encoding="utf-8") as f:
+        content_data = json.load(f)
+        
+    text_en = content_data.get("text_en")
+    if not text_en:
+        raise SystemExit("Error: 'text_en' not found or empty in content.json")
+        
+    audio_dir = proj_dir / "02_audio"
+    audio_dir.mkdir(parents=True, exist_ok=True)
+    
+    out_wav = audio_dir / "audio.wav"
+    out_mp3 = audio_dir / "audio.mp3"
+    
+    # Determine the correct language code for Kokoro pipeline ('a' for American, 'b' for British, etc.)
+    lang_code = args.voice[0] 
+    print(f"[INFO] Initializing Kokoro Pipeline (lang='{lang_code}')...")
+    pipeline = KPipeline(lang_code=lang_code)
+    
+    tts_text = prepare_text_for_reading(text_en, args.reading_style)
+    print(
+        f"[INFO] Generating audio for text ({len(tts_text)} chars) "
+        f"with voice '{args.voice}' at speed {args.speed} (style={args.reading_style})..."
+    )
+    
+    # Generate audio
+    # Kokoro splits input automatically by sentences/newlines
+    generator = pipeline(tts_text, voice=args.voice, speed=args.speed, split_pattern=r'\\n+')
+    
+    full_audio = AudioSegment.empty()
+    phonemes_collected = []
+    
+    for i, (gs, ps, audio_data) in enumerate(generator):
+        if audio_data is not None:
+            if ps:
+                phonemes_collected.append(ps)
+                
+            tmp_wav = audio_dir / f"tmp_{i}.wav"
+            # Kokoro runs at 24000Hz sampling rate
+            sf.write(str(tmp_wav), audio_data, 24000)
+            
+            chunk_audio = AudioSegment.from_wav(str(tmp_wav))
+            tmp_wav.unlink()
+            
+            # Trim excessive leading/trailing silence generated by Kokoro models
+            trim_start = detect_leading_silence(chunk_audio, silence_threshold=-45.0)
+            trim_end = detect_leading_silence(chunk_audio.reverse(), silence_threshold=-45.0)
+            end_idx = len(chunk_audio) - trim_end
+            
+            if trim_start < end_idx:
+                chunk_audio = chunk_audio[trim_start:end_idx]
+                
+            # Add a tight, controlled pause (150ms) between sentences to keep up the pace of short-form videos
+            chunk_audio += AudioSegment.silent(duration=150)
+            
+            full_audio += chunk_audio
+            
+    if len(full_audio) == 0:
+        raise SystemExit("Error: Generated audio is empty!")
+        
+    # Export final audio
+    duration_sec = len(full_audio) / 1000.0
+    print(f"[INFO] Exporting audio ({duration_sec:.2f}s)...")
+    full_audio.export(str(out_wav), format="wav")
+    full_audio.export(str(out_mp3), format="mp3", bitrate="192k")
+    
+    # Save metadata for subsequent steps
+    meta = {
+        "voice": args.voice,
+        "speed": args.speed,
+        "reading_style": args.reading_style,
+        "duration_sec": round(duration_sec, 3),
+        "phonemes": " ".join(phonemes_collected),
+        "generated_at": datetime.now().isoformat(timespec="seconds")
+    }
+    
+    meta_path = audio_dir / "audio_meta.json"
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=2, ensure_ascii=False)
+        
+    print(f"[DONE] Audio generated successfully!")
+    print(f"[DONE] Outputs saved in: {audio_dir}")
+
+if __name__ == "__main__":
+    main()

@@ -49,6 +49,7 @@ class PipelineSpinner:
         self._last_info = ""
 
     def _spin(self):
+        import shutil
         i = 0
         while self._running:
             elapsed = time.time() - self._start_time
@@ -57,6 +58,15 @@ class PipelineSpinner:
             info = f"  {frame} [{self.step_num}/{self.total_steps}] {self.label} ... {m:02d}:{s:02d}"
             if self._last_info:
                 info += f"  | {self._last_info}"
+            
+            try:
+                term_width = shutil.get_terminal_size((80, 20)).columns
+            except Exception:
+                term_width = 80
+                
+            if term_width > 0 and len(info) >= term_width:
+                info = info[:term_width - 4] + "..."
+                
             sys.stdout.write(f"\r\033[K{info}")
             sys.stdout.flush()
             i += 1
@@ -177,6 +187,8 @@ def generate_youtube_metadata(topic, base_name):
     else:
         timestamps_text += "1:50 [Insert Chapter 1]\\n4:30 [Insert Chapter 2]\\n7:00 Outro"
 
+    base_hashtags = "#viral #englishforbeginners #learnenglish #englishlistening #englishreading #a2 #b1 #luyennghetienganh #tienganhmoingay #englishmistakes #learnenglishwithstories #tienganh #englishlearning #tuhoc #learnontiktok #esl #englishvocabulary #hoctienganh #studyenglish #edutok #tienganhchonguoinguoimatgoc #matgoctienganh #basicenglish #beginnerenglish #tienganhcoban #simpleenglish #hoctienganhmoingay #startlearning #luyennoitienganh #pronunciation #speakenglish #shadowing #phatamtienganh #englishspeaking #americanaccent #luyennghe #dailyconversation #tuvungtienganh #commonmistakes #idioms #phrasalverbs #englishtips #nguphaptienganh #grammar #englishclass #vocabulary #meohoctienganh #learnenglishthroughfilm #hoctienganhquaphim #funenglish #englishstories #hoctienganhquaauanh #storytime #giaitritonghop #englishquiz"
+
     prompt = f"""
 I have generated a podcast video about the topic: "{topic}".
 Here is the raw script of the podcast we generated:
@@ -187,14 +199,16 @@ Here is the raw script of the podcast we generated:
 Please generate the YouTube Title, Description, and Tags formatted exactly like the example below.
 Adapt the bullet points in the "What you will learn" section to match the actual curriculum found in the script.
 CRITICAL: For the "TIMESTAMPS" section, you MUST strictly use the exact timestamps provided below. Do not invent or change the times.
+CRITICAL: After the timestamps, you MUST include the exact provided base hashtags, PLUS generate exactly 20 MORE highly viral, engaging emojis and hashtags relevant to the topic.
+CRITICAL: The YouTube Title MUST be catchy, use emojis, and strictly be 100 characters or less in total length! Focus on making it engaging!
 
 EXAMPLE FORMAT:
-Title: {topic}
+Title: 🎧 English Podcast Everyday with Alex & Sarah – [Catchy Title] ✨
 
-🎧 Max & Mia Podcast – Intermediate Conversations for Real Life!
+Welcome to another episode of English Podcast Everyday!
 Unlock your English fluency with natural, real-world conversations.
 
-Are you ready to take your English to the next level? In today’s episode, Max and Mia guide you through everyday English conversations at an intermediate level (A2–B1–B2). Whether you're chatting with coworkers, neighbors, or friends, these phrases and expressions will help you speak more naturally and confidently.
+Are you ready to take your English to the next level? In today’s episode, Alex and Sarah guide you through everyday English conversations at an intermediate level (A2–B1–B2). Whether you're chatting with coworkers, neighbors, or friends, these phrases and expressions will help you speak more naturally and confidently.
 
 This episode is perfect if you:
 - Want to improve your listening skills through real conversation
@@ -202,10 +216,10 @@ This episode is perfect if you:
 - Need a fun and simple way to practice shadowing
 - Love learning with friendly voices and clear subtitles
 
-💡 Remember: every word, every sentence, every conversation brings you closer to fluency. So grab your favorite drink, relax, and practice with Max and Mia — your English-learning friends!
+💡 Remember: every word, every sentence, every conversation brings you closer to fluency. So grab your favorite drink, relax, and practice with Alex and Sarah — your English-learning friends!
 
 🎯 Tags:
-english podcast for learning english, english for beginners, intermediate english podcast, A2 B1 B2 english listening, english conversation with subtitles, daily english routine, english listening practice, podcast shadowing english, english speaking practice, max and mia english
+english podcast for learning english, english for beginners, intermediate english podcast, A2 B1 B2 english listening, english conversation with subtitles, daily english routine, english listening practice, podcast shadowing english, english speaking practice, alex and sarah english
 
 📄 Transcription:
 https://drive.google.com/file/d/1gWB8...
@@ -219,6 +233,9 @@ ___________________________________________________________________________
 ___________________________________________________________________________
 ⏱️ TIMESTAMPS:
 {timestamps_text}
+
+{base_hashtags}
+[Generate 20 more viral hashtags and emojis here]
 """
 
     client = OpenAI(
@@ -244,9 +261,97 @@ ___________________________________________________________________________
     except Exception as e:
         print(f"\n  ⚠ Lỗi khi gọi API: {e}")
 
+# ================= UI HELPERS =================
+FLOW_NEW = "1"
+FLOW_CONTINUE = "2"
+
+def choose_flow_mode() -> str:
+    print("\nSelect pipeline action:")
+    print("1) Create new project")
+    print("2) Continue existing project by path")
+    while True:
+        choice = input("Choose action (1/2): ").strip()
+        if choice in {FLOW_NEW, FLOW_CONTINUE}:
+            return choice
+        print("Invalid choice. Please enter 1 or 2.")
+
+def clean_user_path(raw_path: str) -> str:
+    cleaned = raw_path.strip().strip('"').strip("'")
+    return os.path.abspath(os.path.expanduser(cleaned))
+
+def prompt_project_dir() -> str:
+    while True:
+        raw = input("Enter existing project folder path: ").strip()
+        if not raw:
+            print("Path cannot be empty. Please try again.")
+            continue
+            
+        path = clean_user_path(raw)
+        if not os.path.exists(path):
+            print(f"Path does not exist: {path}")
+            continue
+        if not os.path.isdir(path):
+            print(f"Path is not a folder: {path}")
+            continue
+        return path
+
+def inspect_project(project_dir: str):
+    """
+    Returns: (start_step_index, topic, safe_topic_name)
+    """
+    files = os.listdir(project_dir)
+    safe_topic_name = None
+    for f in files:
+        if f.endswith("_script.json"):
+            safe_topic_name = f.replace("_script.json", "")
+            break
+            
+    if not safe_topic_name:
+        for f in files:
+            if f.endswith("_podcast.mp3"):
+                safe_topic_name = f.replace("_podcast.mp3", "")
+                break
+                
+    if not safe_topic_name:
+        safe_topic_name = os.path.basename(project_dir)
+        
+    start_step = 1
+    
+    script_file = os.path.join(project_dir, f"{safe_topic_name}_script.json")
+    mp3_file = os.path.join(project_dir, f"{safe_topic_name}_podcast.mp3")
+    video_file = os.path.join(project_dir, f"{safe_topic_name}_Final_Video.mp4")
+    md_file = os.path.join(project_dir, f"{safe_topic_name}_youtube_content.md")
+    
+    topic = ""
+    if os.path.exists(script_file) and os.path.getsize(script_file) > 0:
+        start_step = 2
+        try:
+            with open(script_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                title = data.get("title", "")
+                if title.startswith("English Podcast Everyday - "):
+                    topic = title.replace("English Podcast Everyday - ", "")
+        except:
+            pass
+            
+    if os.path.exists(mp3_file) and os.path.getsize(mp3_file) > 0:
+        start_step = 3
+        
+    if os.path.exists(video_file) and os.path.getsize(video_file) > 0:
+        start_step = 4
+        
+    if os.path.exists(md_file) and os.path.getsize(md_file) > 0:
+        start_step = 5
+        
+    if not topic:
+        topic = input(f"Could not automatically detect the topic from {project_dir}.\nPlease enter the topic manually: ").strip()
+        
+    return start_step, topic, safe_topic_name
+
 # ================= MAIN =================
 def main():
     import argparse
+    global OUTPUT_DIR
 
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -255,48 +360,77 @@ def main():
     args = parser.parse_args()
 
     topic = args.topic
-    if not topic:
-        topic = input("Nhập chủ đề video (Nội dung chính): ").strip()
 
-    if not topic:
-        print("Chủ đề không được để trống!")
-        sys.exit(1)
+    print(f"\n{'='*50}")
+    print(f"  🎬  YOUTUBE VIDEO PIPELINE")
+    print(f"{'='*50}")
 
-    os.makedirs(INPUT_DIR, exist_ok=True)
+    flow_mode = choose_flow_mode()
 
-    with open(TOPICS_FILE, "w", encoding="utf-8") as f:
-        f.write(topic + "\n")
+    if flow_mode == FLOW_NEW:
+        if not topic:
+            topic = input("Nhập chủ đề video (Nội dung chính): ").strip()
 
-    # --- TẠO THƯ MỤC OUTPUT ĐỘNG THEO NGÀY VÀ CHỦ ĐỀ ---
-    from datetime import datetime
-    date_str = datetime.now().strftime("%d_%m_%Y")
-    safe_topic_name = "".join([c for c in topic if c.isalnum() or c == ' ']).rstrip().replace(" ", "_")
-    dynamic_out_dir = os.path.join(BASE_DIR, "output", date_str, safe_topic_name)
-    os.makedirs(dynamic_out_dir, exist_ok=True)
-    
-    # Save the dynamic output dir to a state file so other scripts can read it
-    with open(CURRENT_OUT_DIR_FILE, "w", encoding="utf-8") as f:
-        f.write(dynamic_out_dir)
+        if not topic:
+            print("Chủ đề không được để trống!")
+            sys.exit(1)
+
+        os.makedirs(INPUT_DIR, exist_ok=True)
+
+        with open(TOPICS_FILE, "w", encoding="utf-8") as f:
+            f.write(topic + "\n")
+
+        # --- TẠO THƯ MỤC OUTPUT ĐỘNG THEO NGÀY VÀ CHỦ ĐỀ ---
+        from datetime import datetime
+        date_str = datetime.now().strftime("%d_%m_%Y")
+        safe_topic_name = "".join([c for c in topic if c.isalnum() or c == ' ']).rstrip().replace(" ", "_")
+        dynamic_out_dir = os.path.join(BASE_DIR, "output", date_str, safe_topic_name)
+        os.makedirs(dynamic_out_dir, exist_ok=True)
         
-    global OUTPUT_DIR
-    OUTPUT_DIR = dynamic_out_dir
-    # -------------------------------------------------------------
+        # Save the dynamic output dir to a state file so other scripts can read it
+        with open(CURRENT_OUT_DIR_FILE, "w", encoding="utf-8") as f:
+            f.write(dynamic_out_dir)
+            
+        OUTPUT_DIR = dynamic_out_dir
+        start_step = 1
+        # -------------------------------------------------------------
+    else:
+        project_dir = prompt_project_dir()
+        start_step, recovered_topic, safe_topic_name = inspect_project(project_dir)
+        topic = recovered_topic
+        OUTPUT_DIR = project_dir
+        
+        os.makedirs(INPUT_DIR, exist_ok=True)
+        with open(TOPICS_FILE, "w", encoding="utf-8") as f:
+            f.write(topic + "\n")
+            
+        with open(CURRENT_OUT_DIR_FILE, "w", encoding="utf-8") as f:
+            f.write(project_dir)
+            
+        if start_step > len(PIPELINE_STEPS) + 1:
+            print(f"\n✅ Tất cả các bước đã hoàn thành cho project này: {project_dir}")
+            return
+            
+        print(f"\nTiếp tục xử lý từ Bước {start_step}...")
 
     total = len(PIPELINE_STEPS) + 1
 
     print(f"\n{'='*50}")
-    print(f"  🎬  YOUTUBE VIDEO PIPELINE")
     print(f"  📌  Chủ đề: {topic}")
-    print(f"  📂  Thư mục lưu: {dynamic_out_dir}/")
+    print(f"  📂  Thư mục lưu: {OUTPUT_DIR}/")
     print(f"{'='*50}\n")
 
     for i, step in enumerate(PIPELINE_STEPS, start=1):
-        run_step(step["script"], step["label"], step["icon"], i, total)
+        if i >= start_step:
+            run_step(step["script"], step["label"], step["icon"], i, total)
+        else:
+            print(f"  ⏩ Bỏ qua bước {i}: {step['label']} (Đã hoàn thành)")
 
-    spinner = PipelineSpinner("📄  Sinh Title & Description cho YouTube", total, total)
-    spinner.start()
-    generate_youtube_metadata(topic, safe_topic_name)
-    spinner.stop(success=True)
+    if start_step <= total:
+        spinner = PipelineSpinner("📄  Sinh Title & Description cho YouTube", total, total)
+        spinner.start()
+        generate_youtube_metadata(topic, safe_topic_name)
+        spinner.stop(success=True)
 
     print(f"\n{'='*50}")
     print(f"  🎉  HOÀN TẤT! Output trong thư mục: {OUTPUT_DIR}/")

@@ -48,6 +48,20 @@ graph TD
     - **Visuals**: Orchestrates **MoviePy** to composite a 9:16 video.
     - **Sync**: Implements a custom "Karaoke" highlight system that syncs text animations with audio playback.
     - **Layout**: Splits the screen into a top visual section and a bottom text/background section.
+
+```text
+┌─────────────────────────┐  ← 1440 px
+│  🖼️  cover.png (TOP 30%) │      (vid_layer)
+│     ~768px height        │
+├─────────────────────────┤
+│  📄 Background image     │      (bg_bottom)
+│      (BOTTOM 70%)        │
+│  + Text layout rendered  │      (clip_text)  ← PIL Image được render bằng ImageDraw
+│  + Karaoke highlight     │      (highlight_clip) ← HighlightRenderer (VideoClip động)
+└─────────────────────────┘
+         ↕ 2560 px
+```
+
 - **Outputs**: `03_video/final_short.mp4` and `render_status.json`.
 
 ### 4. Metadata Generation (`step4_generate_metadata.py`)
