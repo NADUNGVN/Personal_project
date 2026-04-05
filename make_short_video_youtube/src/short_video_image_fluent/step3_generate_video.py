@@ -139,6 +139,19 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def prompt_yes_no(prompt_text: str, default: bool = False) -> bool:
+    suffix = "Y/n" if default else "y/N"
+    while True:
+        raw = input(f"{prompt_text} ({suffix}): ").strip().lower()
+        if not raw:
+            return default
+        if raw in {"y", "yes"}:
+            return True
+        if raw in {"n", "no"}:
+            return False
+        print("Please enter y/yes or n/no.")
+
+
 def write_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -538,6 +551,28 @@ def _resize_and_crop_pil(img_pil: Image.Image, target_w: int, target_h: int) -> 
     return img_pil.crop((left, top, left + target_w, top + target_h))
 
 
+def wait_for_cover_image(img_path: Path) -> None:
+    while not img_path.exists():
+        print(f"Goal: Save the image to this exact path: {img_path}")
+        user_input = input(
+            "Enter the absolute path to your generated image to copy it automatically\n"
+            "(Or simply press ENTER if you already saved it there manually): "
+        ).strip()
+
+        if user_input:
+            user_img_path = Path(user_input.strip('"\'')) 
+            if user_img_path.exists():
+                import shutil
+
+                shutil.copy2(user_img_path, img_path)
+                print(f"[INFO] Successfully copied {user_img_path} to {img_path}")
+            else:
+                print(f"[ERROR] File not found: {user_img_path}")
+        else:
+            if not img_path.exists():
+                print(f"[ERROR] Image not found at {img_path}. Please try again.")
+
+
 def render_video(
     image_path: Path,
     audio_path: Path,
@@ -697,39 +732,33 @@ def main():
         "started_at": datetime.now().isoformat(timespec="seconds"),
     }
     write_json(render_status_path, render_status)
-    
-    client = load_env_and_get_client(project_root)
-    
+
     # 1. Image Protocol
     if not img_path.exists():
-        prompt = generate_image_prompt(client, topic, text)
-        prompt_file = vid_dir / "image_prompt.txt"
-        with open(prompt_file, "w", encoding="utf-8") as f:
-            f.write(prompt)
-            
-        print("\n" + "="*80)
-        print("ACTION REQUIRED: Manual Image Generation")
-        print("Please use the following prompt to generate an image manually:")
-        print(f"\n{prompt}\n")
-        print(f"Prompt also saved to: {prompt_file}")
-        print("="*80 + "\n")
-        
-        while not img_path.exists():
-            print(f"Goal: Save the image to this exact path: {img_path}")
-            user_input = input("Enter the absolute path to your generated image to copy it automatically\n(Or simply press ENTER if you already saved it there manually): ").strip()
-            
-            if user_input:
-                user_img_path = Path(user_input.strip('"\''))
-                if user_img_path.exists():
-                    import shutil
-                    shutil.copy2(user_img_path, img_path)
-                    print(f"[INFO] Successfully copied {user_img_path} to {img_path}")
-                else:
-                    print(f"[ERROR] File not found: {user_img_path}")
-            else:
-                if not img_path.exists():
-                    print(f"[ERROR] Image not found at {img_path}. Please try again.")
-                    
+        should_generate_prompt = prompt_yes_no(
+            "Ban co muon tao prompt de sinh anh khong",
+            default=False,
+        )
+
+        if should_generate_prompt:
+            client = load_env_and_get_client(project_root)
+            prompt = generate_image_prompt(client, topic, text)
+            prompt_file = vid_dir / "image_prompt.txt"
+            with open(prompt_file, "w", encoding="utf-8") as f:
+                f.write(prompt)
+
+            print("\n" + "=" * 80)
+            print("ACTION REQUIRED: Manual Image Generation")
+            print("Please use the following prompt to generate an image manually:")
+            print(f"\n{prompt}\n")
+            print(f"Prompt also saved to: {prompt_file}")
+            print("=" * 80 + "\n")
+        else:
+            print("[INFO] Skipping AI image prompt generation.")
+            print("[INFO] Waiting for your cover image path or manual save to target location.")
+
+        wait_for_cover_image(img_path)
+
     print(f"[INFO] Image validated at: {img_path}")
     
     # --- IF YOU WANT TO USE THE API DIRECTLY, COMMENT OUT THE WHILE LOOP ABOVE
