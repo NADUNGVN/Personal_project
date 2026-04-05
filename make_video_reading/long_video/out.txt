@@ -1,0 +1,22 @@
+Mẫu 10 từ đầu sau khi ghép difflib:
+- {'word': 'Many', 'start': np.float64(0.12), 'end': np.float64(0.26)}
+- {'word': 'English', 'start': np.float64(0.26), 'end': np.float64(0.74)}
+- {'word': 'learners', 'start': np.float64(0.74), 'end': np.float64(1.1800000000000002)}
+- {'word': 'have', 'start': np.float64(1.1800000000000002), 'end': np.float64(1.8199999999999998)}
+- {'word': 'the', 'start': np.float64(1.8199999999999998), 'end': np.float64(1.94)}
+- {'word': 'same', 'start': np.float64(1.94), 'end': np.float64(2.22)}
+- {'word': 'problem.', 'start': np.float64(2.22), 'end': np.float64(2.5)}
+- {'word': 'They', 'start': np.float64(3.2200000000000006), 'end': np.float64(3.58)}
+- {'word': 'want', 'start': np.float64(3.58), 'end': np.float64(3.8600000000000003)}
+- {'word': 'to', 'start': np.float64(3.8600000000000003), 'end': np.float64(4.08)}
+
+Chi tiết Render của màn hình đầu tiên:
+Bắt đầu render: 0.0 -> 2.8600000000000003
+Các từ trong màn 1:
+[0.12 - 0.26] Text: 'Many' at X:90, Y:94
+[0.26 - 0.74] Text: 'English' at X:359, Y:94
+[0.74 - 1.18] Text: 'learners' at X:727, Y:94
+[1.18 - 1.82] Text: 'have' at X:1123, Y:94
+[1.82 - 1.94] Text: 'the' at X:1366, Y:94
+[1.94 - 2.22] Text: 'same' at X:465, Y:217
+[2.22 - 2.50] Text: 'problem.' at X:734, Y:217
