@@ -1,0 +1,247 @@
+{
+  "source_name": "lofidailystudio",
+  "slug": "lofidailystudio",
+  "dataset_type": "music",
+  "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+  "source_url": "https://www.youtube.com/watch?v=eg4qEdQBh2o&t=253s",
+  "tags": [
+    "lofi",
+    "chill",
+    "lofi hiphop",
+    "lofi jazz"
+  ],
+  "item_count": 12,
+  "source_entries": [
+    {
+      "source_entry_key": "09f0241f14",
+      "source_url": "https://www.youtube.com/watch?v=mU2a4E4r8GI",
+      "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+      "tags": [
+        "lofi",
+        "chill",
+        "lofi hiphop",
+        "lofi jazz"
+      ],
+      "path": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\sources\\09f0241f14.json"
+    },
+    {
+      "source_entry_key": "69198e9d8c",
+      "source_url": "https://www.youtube.com/watch?v=knC9WwuXXvg",
+      "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+      "tags": [
+        "lofi",
+        "chill",
+        "lofi hiphop",
+        "lofi jazz"
+      ],
+      "path": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\sources\\69198e9d8c.json"
+    },
+    {
+      "source_entry_key": "88449b94fb",
+      "source_url": "https://www.youtube.com/watch?v=7j6vLxzZwm8",
+      "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+      "tags": [
+        "lofi",
+        "chill",
+        "lofi hiphop",
+        "lofi jazz"
+      ],
+      "path": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\sources\\88449b94fb.json"
+    },
+    {
+      "source_entry_key": "899c87f31f",
+      "source_url": "https://www.youtube.com/watch?v=eg4qEdQBh2o&t=253s",
+      "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+      "tags": [
+        "lofi",
+        "chill",
+        "lofi hiphop",
+        "lofi jazz"
+      ],
+      "path": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\sources\\899c87f31f.json"
+    },
+    {
+      "source_entry_key": "a67ab0b46d",
+      "source_url": "https://www.youtube.com/watch?v=Z2Ye68jSsHA",
+      "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+      "tags": [
+        "lofi",
+        "chill",
+        "lofi hiphop",
+        "lofi jazz"
+      ],
+      "path": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\sources\\a67ab0b46d.json"
+    },
+    {
+      "source_entry_key": "ac7f88d07c",
+      "source_url": "https://www.youtube.com/watch?v=nr32COcc90s",
+      "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+      "tags": [
+        "lofi",
+        "chill",
+        "lofi hiphop",
+        "lofi jazz"
+      ],
+      "path": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\sources\\ac7f88d07c.json"
+    },
+    {
+      "source_entry_key": "afce051cbd",
+      "source_url": "https://www.youtube.com/watch?v=mD2Hf_Zhkfg",
+      "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+      "tags": [
+        "lofi",
+        "chill",
+        "lofi hiphop",
+        "lofi jazz"
+      ],
+      "path": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\sources\\afce051cbd.json"
+    },
+    {
+      "source_entry_key": "cdfc95c38e",
+      "source_url": "https://www.youtube.com/watch?v=GInxP8vhKWQ",
+      "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+      "tags": [
+        "lofi",
+        "chill",
+        "lofi hiphop",
+        "lofi jazz"
+      ],
+      "path": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\sources\\cdfc95c38e.json"
+    },
+    {
+      "source_entry_key": "d08aa55dd3",
+      "source_url": "https://www.youtube.com/watch?v=-Yn2Ko97XME",
+      "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+      "tags": [
+        "lofi",
+        "chill",
+        "lofi hiphop",
+        "lofi jazz"
+      ],
+      "path": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\sources\\d08aa55dd3.json"
+    },
+    {
+      "source_entry_key": "db2a6fd8e4",
+      "source_url": "https://www.youtube.com/watch?v=CfH4-NOaw3Q",
+      "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+      "tags": [
+        "lofi",
+        "chill",
+        "lofi hiphop",
+        "lofi jazz"
+      ],
+      "path": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\sources\\db2a6fd8e4.json"
+    },
+    {
+      "source_entry_key": "e6ce218e92",
+      "source_url": "https://www.youtube.com/watch?v=97cUPR_2yLs",
+      "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+      "tags": [
+        "lofi",
+        "chill",
+        "lofi hiphop",
+        "lofi jazz"
+      ],
+      "path": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\sources\\e6ce218e92.json"
+    },
+    {
+      "source_entry_key": "f47bad7106",
+      "source_url": "https://www.youtube.com/watch?v=ncIaz-1mAnY",
+      "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+      "tags": [
+        "lofi",
+        "chill",
+        "lofi hiphop",
+        "lofi jazz"
+      ],
+      "path": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\sources\\f47bad7106.json"
+    }
+  ],
+  "items": [
+    {
+      "id": "-Yn2Ko97XME",
+      "title": "DAILY No Copyright For You – Set Me Free by chillity 🎵",
+      "duration_seconds": 125,
+      "webpage_url": "https://www.youtube.com/watch?v=-Yn2Ko97XME",
+      "item_dir": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\items\\-Yn2Ko97XME"
+    },
+    {
+      "id": "7j6vLxzZwm8",
+      "title": "DAILY No Copyright For You – Remote Location by Filo Starquez 🎵",
+      "duration_seconds": 148,
+      "webpage_url": "https://www.youtube.com/watch?v=7j6vLxzZwm8",
+      "item_dir": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\items\\7j6vLxzZwm8"
+    },
+    {
+      "id": "97cUPR_2yLs",
+      "title": "DAILY No Copyright For You – Early Bird by Jay Someday 🎵",
+      "duration_seconds": 147,
+      "webpage_url": "https://www.youtube.com/watch?v=97cUPR_2yLs",
+      "item_dir": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\items\\97cUPR_2yLs"
+    },
+    {
+      "id": "CfH4-NOaw3Q",
+      "title": "DAILY No Copyright For You – Alone by Qlowdy 🎵",
+      "duration_seconds": 195,
+      "webpage_url": "https://www.youtube.com/watch?v=CfH4-NOaw3Q",
+      "item_dir": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\items\\CfH4-NOaw3Q"
+    },
+    {
+      "id": "eg4qEdQBh2o",
+      "title": "[no copyright music] \" bara time \" cute vlog music",
+      "duration_seconds": 1229,
+      "webpage_url": "https://www.youtube.com/watch?v=eg4qEdQBh2o",
+      "item_dir": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\items\\eg4qEdQBh2o"
+    },
+    {
+      "id": "GInxP8vhKWQ",
+      "title": "DAILY No Copyright For You – Feeling by Riyhsal 🎵",
+      "duration_seconds": 133,
+      "webpage_url": "https://www.youtube.com/watch?v=GInxP8vhKWQ",
+      "item_dir": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\items\\GInxP8vhKWQ"
+    },
+    {
+      "id": "knC9WwuXXvg",
+      "title": "DAILY No Copyright For You – Arizona Echoes by tubebackr & Filo Starquez 🎵",
+      "duration_seconds": 190,
+      "webpage_url": "https://www.youtube.com/watch?v=knC9WwuXXvg",
+      "item_dir": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\items\\knC9WwuXXvg"
+    },
+    {
+      "id": "mD2Hf_Zhkfg",
+      "title": "DAILY No Copyright For You – Sweet Memories by Sakura Girl 🎵",
+      "duration_seconds": 202,
+      "webpage_url": "https://www.youtube.com/watch?v=mD2Hf_Zhkfg",
+      "item_dir": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\items\\mD2Hf_Zhkfg"
+    },
+    {
+      "id": "mU2a4E4r8GI",
+      "title": "DAILY No Copyright For You – ONYX by Ferco & tubebackr 🎵",
+      "duration_seconds": 268,
+      "webpage_url": "https://www.youtube.com/watch?v=mU2a4E4r8GI",
+      "item_dir": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\items\\mU2a4E4r8GI"
+    },
+    {
+      "id": "ncIaz-1mAnY",
+      "title": "DAILY No Copyright For You – 서울행 Seoul Bound by Declan DP 🎵",
+      "duration_seconds": 181,
+      "webpage_url": "https://www.youtube.com/watch?v=ncIaz-1mAnY",
+      "item_dir": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\items\\ncIaz-1mAnY"
+    },
+    {
+      "id": "nr32COcc90s",
+      "title": "DAILY No Copyright For You – Dreams of You by BlauDisS 🎵",
+      "duration_seconds": 135,
+      "webpage_url": "https://www.youtube.com/watch?v=nr32COcc90s",
+      "item_dir": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\items\\nr32COcc90s"
+    },
+    {
+      "id": "Z2Ye68jSsHA",
+      "title": "DAILY No Copyright For You – Need You by Filo Starquez 🎵",
+      "duration_seconds": 189,
+      "webpage_url": "https://www.youtube.com/watch?v=Z2Ye68jSsHA",
+      "item_dir": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio\\items\\Z2Ye68jSsHA"
+    }
+  ],
+  "updated_at": "2026-03-19T14:24:56"
+}

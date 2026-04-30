@@ -63,7 +63,7 @@ flowchart TD
     
     out_subs --> seo
     in_topic --> seo
-    seo -->|"File Metadata"| out_seo["📋 _youtube_metadata.md"]
+    seo -->|"File Metadata"| out_seo["📋 _youtube_content.md"]
     
     %% Styles
     classDef output fill:#2e7d32,stroke:#1b5e20,stroke-width:2px,color:white;
@@ -162,4 +162,4 @@ Sử dụng trực tiếp LLM để SEO Tối ưu trước khi chủ kênh đăn
 LLM được cấp sẵn Data mốc thời gian có từ TTS. Prompt bắt buộc nó viết tiêu đề Giật Tít, Meta description cuốn hút, Hagtag và BẮT BUỘC chèn mốc **Time Stamps Chapter (Chương Video)** chuẩn xác 100% với file MP4.
 
 **Outputs (Lưu tại thư mục động)**:
-- `_youtube_metadata.md`: Tài liệu Copy-Paste dán thẳng vào trình tải Video YouTube với đầy đủ bộ chốt thời gian đánh dấu các phân đoạn Act 1, Act 2 của Clip.
+- `_youtube_content.md`: Tài liệu Copy-Paste dán thẳng vào trình tải Video YouTube với đầy đủ bộ chốt thời gian đánh dấu các phân đoạn Act 1, Act 2 của Clip.

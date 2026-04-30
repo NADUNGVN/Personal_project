@@ -1,12 +1,10 @@
 import os
 import sys
 import json
-import csv
 import soundfile as sf
 import shutil
 import warnings
 from datetime import datetime
-from typing import Dict, List
 import imageio_ffmpeg
 from pydub import AudioSegment
 from pydub.silence import detect_leading_silence
@@ -18,10 +16,13 @@ warnings.filterwarnings("ignore", category=UserWarning)
 ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
 AudioSegment.converter = ffmpeg_exe
 
-# ================= GLOBAL CONFIGURATION# Define directories
+# ================= GLOBAL CONFIGURATION =================
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INPUT_DIR = os.path.join(BASE_DIR, "input")
-DATA_DIR = r"d:\work\Personal_project\data" # Keep DATA_DIR as it's used later
+
+# Import shared utilities
+sys.path.insert(0, BASE_DIR)
+from utils import make_safe_topic_name
 
 # Read dynamic output directory if it exists, otherwise default to "output"
 CURRENT_OUT_DIR_FILE = os.path.join(INPUT_DIR, "current_output_dir.txt")
@@ -31,10 +32,8 @@ if os.path.exists(CURRENT_OUT_DIR_FILE):
 else:
     OUTPUT_DIR = os.path.join(BASE_DIR, "output")
 
-TMP_AUDIO_DIR = os.path.join(OUTPUT_DIR, "tmp_kokoro") # Changed to be relative to OUTPUT_DIR
-CURRENT_PDF_FILE = os.path.join(INPUT_DIR, "current_pdf.txt")
+TMP_AUDIO_DIR = os.path.join(OUTPUT_DIR, "tmp_kokoro")
 TOPICS_FILE = os.path.join(INPUT_DIR, "topics.txt")
-DATASET_CSV = os.path.join(DATA_DIR, "dataset_metadata.csv")
 # ========================================================
 
 from kokoro import KPipeline
@@ -66,13 +65,6 @@ def setup_directories():
     os.makedirs(INPUT_DIR, exist_ok=True)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     os.makedirs(TMP_AUDIO_DIR, exist_ok=True)
-    os.makedirs(DATA_DIR, exist_ok=True)
-    
-    # Initialize the Training Data CSV if it doesn't exist yet
-    if not os.path.exists(DATASET_CSV):
-        with open(DATASET_CSV, mode='w', newline='', encoding='utf-8') as csv_file:
-            writer = csv.writer(csv_file)
-            writer.writerow(['wav_filename', 'speaker', 'text_display', 'phonemes'])
 
 def cleanup_tmp_audio():
     """Removes the tmp_audio directory and all its contents"""
@@ -97,9 +89,7 @@ def get_voice_for_speaker(speaker: str) -> str:
     return DEFAULT_VOICE
 
 def process_topic_tts(topic: str, pipeline: KPipeline):
-    # Lấy thông số timestamp gắn với cả quá trình xử lý topic
-    current_time_str = datetime.now().strftime("%Y%m%d_%H%M")
-    safe_topic_name = "".join([c for c in topic if c.isalnum() or c==' ']).rstrip().replace(" ", "_")
+    safe_topic_name = make_safe_topic_name(topic)
     json_filename = os.path.join(OUTPUT_DIR, f"{safe_topic_name}_script.json")
     
     if not os.path.exists(json_filename):
@@ -147,8 +137,10 @@ def process_topic_tts(topic: str, pipeline: KPipeline):
         duration_ms = 0
         voice = None
         
-        # BỎ QUA TẠO AUDIO NẾU LÀ HEADING ĐẦU TIÊN (Intro) HOẶC KHÔNG CÓ THOẠI
-        if item_type == "heading" and (idx == 1 or not text_tts or speaker == "Unknown" or speaker == ""):
+        # BỎ QUA TẠO AUDIO NẾU LÀ HEADING MỨT ÂM (speaker rỗng hoặc text_tts rỗng)
+        # Áp dụng cho: Intro heading (segment 1) VÀ Outro heading (segment 9)
+        # Logic: Bất kỳ heading nào có speaker="" hoặc text_tts="" đều được xem là mute
+        if item_type == "heading" and (not text_tts.strip() or not speaker or speaker == "Unknown"):
             print(f"  [{idx}/{total_turns}] Skipping audio generation for silent heading: '{text_display}'")
             # Vẫn ghi timestamp nhưng không cộng thời gian
             subtitles.append({
@@ -213,36 +205,6 @@ def process_topic_tts(topic: str, pipeline: KPipeline):
         turn_audio += AudioSegment.silent(duration=pause_duration)
         # ----------------------------------------------------------------
         
-        # --- BƯỚC MỚI: LƯU TRỮ AUDIO (VÀ TEXT DỮ LIỆU HUẤN LUYỆN) RIÊNG LẺ MỖI LẦN NÓI ---
-        # Tạo thư mục theo cấu trúc: data/{Speaker}/{NgàyGiờ}_{TênTopic}/
-        # Ví dụ: data/Alex/20260224_1045_Talking_About_Your_Week
-        speaker_topic_dir = os.path.join(DATA_DIR, speaker, f"{current_time_str}_{safe_topic_name}")
-        os.makedirs(speaker_topic_dir, exist_ok=True)
-        
-        # Bộ ID Tên (Ví dụ: alex_1, sarah_2) ngắn gọn
-        base_filename = f"{speaker.lower()}_{idx}"
-        
-        # 1. Lưu file âm thanh riêng lẻ (.wav) vào thư mục chung của topic
-        turn_wav_path = os.path.join(speaker_topic_dir, f"{base_filename}.wav")
-        turn_audio.export(turn_wav_path, format="wav")
-        
-        # 2. Xây dữ liệu Train: Xuất transcript sạch (.txt) đi kèm nằm sát file .wav
-        turn_txt_path = os.path.join(speaker_topic_dir, f"{base_filename}.txt")
-        with open(turn_txt_path, "w", encoding="utf-8") as text_file:
-            text_file.write(text_display)
-            
-        # 3. Ghi vào file CSV tổng hợp toàn bộ (Metadata for Machine Learning AI Model)
-        # Format giống với chuẩn LJSpeech (audio_path, transcript)
-        try:
-            with open(DATASET_CSV, mode='a', newline='', encoding='utf-8') as csv_file:
-                writer = csv.writer(csv_file)
-                # Đổi đường dẫn tuyệt đối (D:\work\...) thành đường dẫn tương đối ("data/...") cho file CSV
-                # Đồng thời đổi dấu \ thành / để tương thích chuẩn với mọi HĐH khi train AI
-                relative_csv_path = f"data/{speaker}/{current_time_str}_{safe_topic_name}/{base_filename}.wav"
-                writer.writerow([relative_csv_path, speaker, text_display, " ".join(turn_phonemes)])
-        except Exception as e:
-            print(f"Warning: Could not write to CSV: {e}")
-        # ----------------------------------------------------------------
         
         # 2. TIMESTAMPING AND SUBTITLES
         duration_ms = len(turn_audio)

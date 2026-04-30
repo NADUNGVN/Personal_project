@@ -1,0 +1,32 @@
+{
+  "source_name": "lofidailystudio",
+  "dataset_type": "music",
+  "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+  "source_url": "https://www.youtube.com/watch?v=97cUPR_2yLs",
+  "tags": [
+    "lofi",
+    "chill",
+    "lofi hiphop",
+    "lofi jazz"
+  ],
+  "id": "97cUPR_2yLs",
+  "title": "DAILY No Copyright For You – Early Bird by Jay Someday 🎵",
+  "uploader": "Audio Library",
+  "channel": "Audio Library",
+  "webpage_url": "https://www.youtube.com/watch?v=97cUPR_2yLs",
+  "duration_seconds": 147,
+  "downloaded_at": "2026-03-18T12:53:13",
+  "grouped_files": {
+    "audio": [
+      "audio\\97cUPR_2yLs.m4a"
+    ],
+    "metadata": [
+      "metadata\\97cUPR_2yLs.description",
+      "metadata\\97cUPR_2yLs.info.json"
+    ],
+    "thumbnails": [
+      "thumbnails\\97cUPR_2yLs.webp"
+    ],
+    "other": []
+  }
+}

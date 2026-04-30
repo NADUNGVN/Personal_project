@@ -1,0 +1,12 @@
+{
+  "generated_at": "2026-03-19T14:24:56",
+  "music_channels": [
+    {
+      "slug": "lofidailystudio",
+      "source_name": "lofidailystudio",
+      "item_count": 12,
+      "path": "D:\\work\\Personal_project\\focus_music_video\\audio_dataset\\dataset\\music\\lofidailystudio"
+    }
+  ],
+  "ambient_channels": []
+}

@@ -9,6 +9,9 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env"))
+
+# Import shared utilities
+from utils import make_safe_topic_name
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_DIR = os.path.join(BASE_DIR, "input")
@@ -383,7 +386,7 @@ def main():
         # --- TẠO THƯ MỤC OUTPUT ĐỘNG THEO NGÀY VÀ CHỦ ĐỀ ---
         from datetime import datetime
         date_str = datetime.now().strftime("%d_%m_%Y")
-        safe_topic_name = "".join([c for c in topic if c.isalnum() or c == ' ']).rstrip().replace(" ", "_")
+        safe_topic_name = make_safe_topic_name(topic)
         dynamic_out_dir = os.path.join(BASE_DIR, "output", date_str, safe_topic_name)
         os.makedirs(dynamic_out_dir, exist_ok=True)
         

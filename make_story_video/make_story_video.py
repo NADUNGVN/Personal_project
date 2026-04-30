@@ -28,18 +28,13 @@ def setup_env():
     
 PIPELINE_STEPS = [
     {
-        "script": "story_generator.py",
-        "label": "AI Storyteller (Davis) evaluates and writes folklore script",
-        "icon": "[STORY]",
-    },
-    {
         "script": "story_tts.py",
-        "label": "Generate speech with VibeVoice (Davis)",
+        "label": "Generate speech from story text (VibeVoice / Davis)",
         "icon": "[TTS]",
     },
     {
         "script": "video_renderer.py",
-        "label": "Render storytelling video",
+        "label": "Render split-screen karaoke story video",
         "icon": "[VIDEO]",
     },
 ]
@@ -180,125 +175,138 @@ def inspect_project(project_dir: str):
     Returns: (start_step_index, topic, safe_topic_name)
     """
     files = os.listdir(project_dir)
+    # Find safe_topic_name from MP3 file or fall back to dir name
     safe_topic_name = None
     for f in files:
-        if f.endswith("_script.json"):
-            safe_topic_name = f.replace("_script.json", "")
+        if f.endswith("_podcast.mp3"):
+            safe_topic_name = f.replace("_podcast.mp3", "")
             break
-            
-    if not safe_topic_name:
-        for f in files:
-            if f.endswith("_podcast.mp3"):
-                safe_topic_name = f.replace("_podcast.mp3", "")
-                break
-                
+
     if not safe_topic_name:
         safe_topic_name = os.path.basename(project_dir)
-        
-    start_step = 1
-    
-    script_file = os.path.join(project_dir, f"{safe_topic_name}_script.json")
-    mp3_file = os.path.join(project_dir, f"{safe_topic_name}_podcast.mp3")
+
+    start_step = 1   # Step 1 = TTS
+
+    mp3_file   = os.path.join(project_dir, f"{safe_topic_name}_podcast.mp3")
     video_file = os.path.join(project_dir, f"{safe_topic_name}_Final_Video.mp4")
-    
-    if os.path.exists(script_file) and os.path.getsize(script_file) > 0:
-        start_step = 2
-            
+
     if os.path.exists(mp3_file) and os.path.getsize(mp3_file) > 0:
-        start_step = 3
-        
+        start_step = 2   # TTS done, go to video render
+
     if os.path.exists(video_file) and os.path.getsize(video_file) > 0:
-        start_step = 4
-        
-    # Attempt to read topic from topic file if available in the source dir
+        start_step = 3   # fully done
+
+    # Read topic from story_details.json; fall back to prompt
     topic = ""
-    # Since topic is not perfectly bound to the project output in vibe-voice, 
-    # we will prompt the user if we can't extract it.
-    topic = input(f"Please confirm the story title for {project_dir}: ").strip()
-        
+    if os.path.exists(STORY_DETAILS_FILE):
+        try:
+            with open(STORY_DETAILS_FILE, "r", encoding="utf-8") as f:
+                topic = json.load(f).get("title", "")
+        except Exception:
+            pass
+
+    if not topic:
+        topic = input(f"Please confirm the story title for {project_dir}: ").strip()
+
     return start_step, topic, safe_topic_name
+
 
 def main():
     os.chdir(BASE_DIR)
     setup_env()
 
     print("\n" + "=" * 64)
-    print("  📜 DAVIS STORYTELLING PIPELINE")
+    print("  📜 STORY VIDEO PIPELINE (Direct Text Mode)")
     print("=" * 64)
 
     flow_mode = choose_flow_mode()
 
     if flow_mode == FLOW_NEW:
-        print("\n[STORY DETAILS]")
-        story_title = input("Enter the Story Title (e.g., The Story of Saint Giong): ").strip()
+        # Check if story_details.json already exists and is ready
+        if os.path.exists(STORY_DETAILS_FILE):
+            with open(STORY_DETAILS_FILE, "r", encoding="utf-8") as f:
+                existing = json.load(f)
+            existing_title = existing.get("title", "")
+            print(f"\n  Found existing story_details.json:")
+            print(f"  Title: {existing_title}")
+            use_existing = input("  Use this story? (y/n): ").strip().lower()
+            if use_existing == "y":
+                story_title   = existing_title
+                story_origin  = existing.get("origin", "")
+                story_synopsis = existing.get("synopsis", "")
+            else:
+                story_title = ""
+        else:
+            story_title = ""
+
         if not story_title:
-            print("Story Title is required!")
-            sys.exit(1)
-            
-        story_origin = input("Enter the Origin of the Story (e.g., Vietnam, Greek Mythology): ").strip()
-        if not story_origin:
-            print("Origin is required!")
-            sys.exit(1)
-            
-        print("Enter a brief synopsis or content of the story (Press ENTER on empty line to finish):")
-        synopsis_lines = []
-        while True:
-            line = input()
-            if not line.strip():
-                break
-            synopsis_lines.append(line)
-        story_synopsis = "\n".join(synopsis_lines)
-        
-        if not story_synopsis:
-            print("Synopsis is required!")
-            sys.exit(1)
-            
-        story_details = {
-            "title": story_title,
-            "origin": story_origin,
-            "synopsis": story_synopsis
-        }
-        
-        with open(STORY_DETAILS_FILE, "w", encoding="utf-8") as f:
-            json.dump(story_details, f, indent=2, ensure_ascii=False)
-            
-        # Write to TOPICS_FILE for legacy compatibility
+            print("\n[STORY DETAILS]")
+            story_title = input("Enter the Story Title: ").strip()
+            if not story_title:
+                print("Story Title is required!")
+                sys.exit(1)
+
+            story_origin = input("Enter the Origin / Source (e.g. Original English): ").strip()
+
+            print("Paste or type the story synopsis/text. Press ENTER on an empty line when done:")
+            lines = []
+            while True:
+                line = input()
+                if not line.strip():
+                    break
+                lines.append(line)
+            story_synopsis = "\n".join(lines)
+
+            if not story_synopsis:
+                print("Synopsis is required!")
+                sys.exit(1)
+
+            story_details = {
+                "title":    story_title,
+                "origin":   story_origin,
+                "synopsis": story_synopsis,
+            }
+            with open(STORY_DETAILS_FILE, "w", encoding="utf-8") as f:
+                json.dump(story_details, f, indent=2, ensure_ascii=False)
+
+        # Write legacy topics.txt
         with open(TOPICS_FILE, "w", encoding="utf-8") as f:
             f.write(story_title + "\n")
 
-        date_str = datetime.now().strftime("%d_%m_%Y")
-        safe_topic_name = "".join([c for c in story_title if c.isalnum() or c == " "]).rstrip().replace(" ", "_")
-        dynamic_out_dir = os.path.join(BASE_DIR, "output", date_str, safe_topic_name)
+        date_str         = datetime.now().strftime("%d_%m_%Y")
+        safe_topic_name  = "".join(c for c in story_title if c.isalnum() or c == " ").rstrip().replace(" ", "_")
+        dynamic_out_dir  = os.path.join(BASE_DIR, "output", date_str, safe_topic_name)
         os.makedirs(dynamic_out_dir, exist_ok=True)
-        
+
         with open(CURRENT_OUT_DIR_FILE, "w", encoding="utf-8") as f:
             f.write(dynamic_out_dir)
-            
-        OUTPUT_DIR = dynamic_out_dir
-        start_step = 1
-        topic = story_title
+
+        OUTPUT_DIR  = dynamic_out_dir
+        start_step  = 1
+        topic       = story_title
 
     else:
         project_dir = prompt_project_dir()
-        start_step, topic, safe_topic_name = inspect_project(project_dir)
+        start_step, recovered_topic, safe_topic_name = inspect_project(project_dir)
+        topic      = recovered_topic
         OUTPUT_DIR = project_dir
-        
+
         with open(TOPICS_FILE, "w", encoding="utf-8") as f:
             f.write(topic + "\n")
-            
+
         with open(CURRENT_OUT_DIR_FILE, "w", encoding="utf-8") as f:
             f.write(project_dir)
-            
+
         if start_step > len(PIPELINE_STEPS):
-            print(f"\n✅ Pipeline completed for this project: {project_dir}")
+            print(f"\n✅ Pipeline already complete for: {project_dir}")
             return
-            
-        print(f"\nContinuing from Step {start_step}...")
+
+        print(f"\nContinuing from Step {start_step}\u2026")
 
     total = len(PIPELINE_STEPS)
 
     print("\n" + "=" * 64)
-    print(f"  Title: {topic}")
+    print(f"  Title : {topic}")
     print(f"  Output: {OUTPUT_DIR}")
     print("=" * 64 + "\n")
 
@@ -306,10 +314,10 @@ def main():
         if i >= start_step:
             run_step(step["script"], step["label"], step["icon"], i, total)
         else:
-            print(f"  ⏩ Skipped Step {i}: {step['label']} (Already Completed)")
+            print(f"  ⏩ Skipping Step {i}: {step['label']} (already done)")
 
     print("\n" + "=" * 64)
-    print(f"  🎉 COMPLETE! Outputs are in: {OUTPUT_DIR}")
+    print(f"  🎉  COMPLETE! Output in: {OUTPUT_DIR}")
     print("=" * 64 + "\n")
 
 

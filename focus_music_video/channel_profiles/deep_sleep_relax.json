@@ -1,0 +1,49 @@
+{
+  "order": 4,
+  "slug": "deep_sleep_relax",
+  "channel_name": "Deep Sleep / Relax",
+  "positioning": "Night-focused packaging for relaxation, winding down and sleep-friendly background listening.",
+  "use_case": "listeners who want calm night audio for sleep, rest and nervous system reset",
+  "overlay_title_template": "Deep Sleep Session",
+  "overlay_subtitle_template": "Soft night ambience for relaxation, rest and gentle sleep",
+  "metadata_title_template": "{title} | Deep Sleep Music for Relaxation and Night Calm",
+  "metadata_summary_template": "{concept} Repositioned as a sleep and relaxation upload for night routines, calm breathing and slow rest.",
+  "keywords": [
+    "deep sleep music",
+    "sleep music",
+    "relaxing night music",
+    "calm sleep ambience",
+    "music for rest"
+  ],
+  "hashtags": [
+    "#deepsleep",
+    "#sleepmusic",
+    "#relaxmusic",
+    "#nightcalm",
+    "#restmusic"
+  ],
+  "visual": {
+    "dim_opacity": 0.28,
+    "brightness": -0.08,
+    "saturation": 0.76,
+    "box_color": "#09111A",
+    "box_opacity": 0.44,
+    "accent_color": "#7FA6D6",
+    "title_color": "#EDF5FF",
+    "subtitle_color": "#D2E1F2",
+    "box_x": "(iw*0.06)",
+    "box_y": "(ih*0.68)",
+    "box_width": "(iw*0.44)",
+    "box_height": "(ih*0.20)",
+    "accent_x": "(iw*0.06)",
+    "accent_y": "(ih*0.66)",
+    "accent_width": "(iw*0.12)",
+    "accent_height": 10,
+    "title_x": "(w*0.09)",
+    "title_y": "(h*0.72)",
+    "subtitle_x": "(w*0.09)",
+    "subtitle_y": "(h*0.82)",
+    "title_font_size": 58,
+    "subtitle_font_size": 29
+  }
+}

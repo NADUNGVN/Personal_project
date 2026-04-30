@@ -387,15 +387,15 @@ def create_video_processor(avatar_path, audio_path, text_data, output_mp4):
             l = WAVE_START_X + b_idx * (bar_width + gap)
             r = l + bar_width
             b = WAVE_Y + WAVE_TOTAL_H
-            t = b - bar_bh
+            bar_top = b - bar_bh
             
             # LOẠI BỎ THAM SỐ Outline vì Pillow bị khuyết tật toán học không gian khi viền hộp quá hẹp
             # Thiết kế Viền Đen thủ công bằng Lớp Màng Đen ẩn bên dưới:
-            d_frame.rounded_rectangle([l-2, t-2, r+2, b], radius=rad+2, fill=(0, 0, 0))
+            d_frame.rounded_rectangle([l-2, bar_top-2, r+2, b], radius=rad+2, fill=(0, 0, 0))
             d_frame.rectangle([l-2, b - rad, r+2, b], fill=(0, 0, 0))
             
             # Phủ Lõi ruột Trắng (chừa lại chính xác 2px viền cực sắc và chắc chắn không bao giờ bị Crash màn hình)
-            d_frame.rounded_rectangle([l, t, r, b], radius=rad, fill=(245, 245, 245))
+            d_frame.rounded_rectangle([l, bar_top, r, b], radius=rad, fill=(245, 245, 245))
             d_frame.rectangle([l, b - rad, r, b], fill=(245, 245, 245))
 
         active_screen = None

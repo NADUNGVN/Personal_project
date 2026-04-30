@@ -1,0 +1,20 @@
+{
+  "name": "lofidailystudio",
+  "dataset_type": "music",
+  "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+  "url": "https://www.youtube.com/watch?v=eg4qEdQBh2o&t=253s",
+  "tags": [
+    "lofi",
+    "chill",
+    "lofi hiphop",
+    "lofi jazz"
+  ],
+  "max_items": null,
+  "enabled": true,
+  "slug": "lofidailystudio",
+  "source_entry_key": "899c87f31f",
+  "channel_title": "[no copyright music] \" bara time \" cute vlog music",
+  "channel_id": "UC7u-C1jUU9oaFjEQmWD0nSQ",
+  "extractor": "Youtube",
+  "updated_at": "2026-03-19T14:24:56"
+}

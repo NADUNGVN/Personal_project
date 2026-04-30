@@ -1,0 +1,32 @@
+{
+  "source_name": "lofidailystudio",
+  "dataset_type": "music",
+  "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+  "source_url": "https://www.youtube.com/watch?v=nr32COcc90s",
+  "tags": [
+    "lofi",
+    "chill",
+    "lofi hiphop",
+    "lofi jazz"
+  ],
+  "id": "nr32COcc90s",
+  "title": "DAILY No Copyright For You – Dreams of You by BlauDisS 🎵",
+  "uploader": "Audio Library",
+  "channel": "Audio Library",
+  "webpage_url": "https://www.youtube.com/watch?v=nr32COcc90s",
+  "duration_seconds": 135,
+  "downloaded_at": "2026-03-18T12:55:53",
+  "grouped_files": {
+    "audio": [
+      "audio\\nr32COcc90s.m4a"
+    ],
+    "metadata": [
+      "metadata\\nr32COcc90s.description",
+      "metadata\\nr32COcc90s.info.json"
+    ],
+    "thumbnails": [
+      "thumbnails\\nr32COcc90s.webp"
+    ],
+    "other": []
+  }
+}

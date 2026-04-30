@@ -1,0 +1,33 @@
+{
+  "source_name": "lofidailystudio",
+  "dataset_type": "music",
+  "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+  "source_url": "https://www.youtube.com/watch?v=eg4qEdQBh2o&t=253s",
+  "tags": [
+    "lofi",
+    "chill",
+    "lofi hiphop",
+    "lofi jazz"
+  ],
+  "id": "eg4qEdQBh2o",
+  "title": "[no copyright music] \" bara time \" cute vlog music",
+  "uploader": "슈슈보보 shushubobo ",
+  "channel": "슈슈보보 shushubobo ",
+  "webpage_url": "https://www.youtube.com/watch?v=eg4qEdQBh2o",
+  "duration_seconds": 1229,
+  "downloaded_at": "2026-03-19T14:24:56",
+  "grouped_files": {
+    "audio": [
+      "audio\\eg4qEdQBh2o.m4a"
+    ],
+    "metadata": [
+      "metadata\\eg4qEdQBh2o.description",
+      "metadata\\eg4qEdQBh2o.info.json",
+      "metadata\\manifest.json"
+    ],
+    "thumbnails": [
+      "thumbnails\\eg4qEdQBh2o.webp"
+    ],
+    "other": []
+  }
+}

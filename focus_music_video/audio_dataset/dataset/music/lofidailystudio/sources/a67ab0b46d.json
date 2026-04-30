@@ -1,0 +1,20 @@
+{
+  "name": "lofidailystudio",
+  "dataset_type": "music",
+  "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+  "url": "https://www.youtube.com/watch?v=Z2Ye68jSsHA",
+  "tags": [
+    "lofi",
+    "chill",
+    "lofi hiphop",
+    "lofi jazz"
+  ],
+  "max_items": null,
+  "enabled": true,
+  "slug": "lofidailystudio",
+  "source_entry_key": "a67ab0b46d",
+  "channel_title": "DAILY No Copyright For You – Need You by Filo Starquez 🎵",
+  "channel_id": "UCht8qITGkBvXKsR1Byln-wA",
+  "extractor": "Youtube",
+  "updated_at": "2026-03-19T13:14:34"
+}

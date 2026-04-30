@@ -1,6 +1,8 @@
 import os
+import sys
 import json
 import math
+import traceback
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from moviepy import AudioFileClip, VideoClip
@@ -9,6 +11,10 @@ from faster_whisper import WhisperModel
 # ================= GLOBAL CONFIGURATION =================
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INPUT_DIR = os.path.join(BASE_DIR, "input")
+
+# Import shared utilities
+sys.path.insert(0, BASE_DIR)
+from utils import make_safe_topic_name
 # Read dynamic output directory if it exists, otherwise default to "output"
 CURRENT_OUT_DIR_FILE = os.path.join(INPUT_DIR, "current_output_dir.txt")
 if os.path.exists(CURRENT_OUT_DIR_FILE):
@@ -74,8 +80,7 @@ def get_target_podcast_files():
     if not topic_name:
         raise ValueError("Chủ đề trong topics.txt trống!")
         
-    # Tạo safe_topic_name khớp với file được sinh ra
-    safe_topic_name = "".join([c for c in topic_name if c.isalnum() or c==' ']).rstrip().replace(" ", "_")
+    safe_topic_name = make_safe_topic_name(topic_name)
     
     mp3_path = os.path.join(OUTPUT_DIR, f"{safe_topic_name}_podcast.mp3")
     json_path = os.path.join(OUTPUT_DIR, f"{safe_topic_name}_subtitles.json")
@@ -512,5 +517,27 @@ def create_video_podcast():
         ffmpeg_params=["-pix_fmt", "yuv420p"], # Ép chuẩn màu mượt trên mọi hệ thống/Tivi
         logger=None  # Tắt progress bar MoviePy tránh spam hàng trăm dòng trên Windows
     )
+
+def main():
+    """Entry point có xử lý lỗi đầy đủ và cleanup an toàn."""
+    try:
+        create_video_podcast()
+    except FileNotFoundError as e:
+        print(f"\n  ❌ Lỗi: Không tìm thấy file cần thiết.")
+        print(f"  └─ {e}")
+        print("  Hãy kiểm tra lại các bước trước (podcast_generator.py, kokoro_tts.py).")
+        sys.exit(1)
+    except ValueError as e:
+        print(f"\n  ❌ Lỗi dữ liệu: {e}")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\n\n  ⚠ Render bị dừng bởi người dùng (Ctrl+C).")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\n  ❌ Lỗi không mong muốn trong quá trình render:")
+        traceback.print_exc()
+        print(f"\n  Thông tin lỗi: {e}")
+        sys.exit(1)
+
 if __name__ == "__main__":
-    create_video_podcast()
+    main()

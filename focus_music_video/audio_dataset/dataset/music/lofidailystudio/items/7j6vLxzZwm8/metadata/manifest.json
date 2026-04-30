@@ -1,0 +1,35 @@
+{
+  "source_name": "lofidailystudio",
+  "dataset_type": "music",
+  "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+  "source_url": "https://www.youtube.com/watch?v=7j6vLxzZwm8",
+  "tags": [
+    "lofi",
+    "chill",
+    "lofi hiphop",
+    "lofi jazz"
+  ],
+  "id": "7j6vLxzZwm8",
+  "title": "DAILY No Copyright For You – Remote Location by Filo Starquez 🎵",
+  "uploader": "Audio Library",
+  "channel": "Audio Library",
+  "webpage_url": "https://www.youtube.com/watch?v=7j6vLxzZwm8",
+  "duration_seconds": 148,
+  "downloaded_at": "2026-03-18T12:58:05",
+  "grouped_files": {
+    "audio": [
+      "audio\\7j6vLxzZwm8.m4a"
+    ],
+    "metadata": [
+      "metadata\\7j6vLxzZwm8.description",
+      "metadata\\7j6vLxzZwm8.info.json",
+      "metadata\\manifest.json"
+    ],
+    "thumbnails": [
+      "thumbnails\\7j6vLxzZwm8.webp"
+    ],
+    "other": [
+      "other\\7j6vLxzZwm8.mp4"
+    ]
+  }
+}

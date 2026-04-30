@@ -18,3 +18,8 @@ vibe-voice/VibeVoice/
 vibe-voice/sample.txt
 
 make_short_video_youtube/src/short_video_image_fluent/output
+make_short_video_youtube/image/image_short_video
+make_video_reading/long_video/output
+focus_music_video/productions
+focus_music_video/benchmarks
+focus_music_video/benchmarks/*.mp4

@@ -9,6 +9,11 @@ from fpdf import FPDF
 # Load environment variables
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".env"))
 
+# Import shared utilities
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, BASE_DIR)
+from utils import make_safe_topic_name
+
 # Ensure API Key is available
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 if not OPENROUTER_API_KEY:
@@ -22,7 +27,6 @@ client = OpenAI(
 )
 
 # --- CONFIGURATION ---
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INPUT_DIR = os.path.join(BASE_DIR, "input")
 TOPICS_FILE = os.path.join(INPUT_DIR, "topics.txt")
 
@@ -642,7 +646,7 @@ def main():
     json_data = generate_full_script(topic_name)
     
     # Create safe filename based on topic
-    safe_topic_name = "".join([c for c in topic_name if c.isalnum() or c==' ']).rstrip().replace(" ", "_")
+    safe_topic_name = make_safe_topic_name(topic_name)
     
     # Save JSON
     json_filename = os.path.join(OUTPUT_DIR, f"{safe_topic_name}_script.json")
@@ -651,7 +655,7 @@ def main():
     print(f"\n  💾 JSON saved to {json_filename}")
     
     # Save PDF (E-book style)
-    clean_pdf_name = "".join([c for c in topic_name if c.isalnum() or c==' ']).strip()
+    clean_pdf_name = make_safe_topic_name(topic_name).replace("_", " ")
     pdf_filename = os.path.join(OUTPUT_DIR, f"{clean_pdf_name}.pdf")
     create_pdf_from_json(json_data, pdf_filename)
     print(f"  📕 PDF saved to {pdf_filename}")

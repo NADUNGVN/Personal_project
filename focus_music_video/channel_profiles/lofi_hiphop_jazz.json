@@ -1,0 +1,49 @@
+{
+  "order": 1,
+  "slug": "lofi_hiphop_jazz",
+  "channel_name": "Lo-fi Hip Hop / Lo-fi Jazz",
+  "positioning": "Warm instrumental beats for study, coding and chilled evening sessions.",
+  "use_case": "students, coders and relaxed night-time listeners",
+  "overlay_title_template": "{title}",
+  "overlay_subtitle_template": "Lo-fi hip hop and jazz beats for study, coding and chill",
+  "metadata_title_template": "{title} | Lo-fi Hip Hop and Lo-fi Jazz Beats for Study and Chill",
+  "metadata_summary_template": "{concept} Packaged as a mellow lo-fi session for focus, reading and relaxed work blocks.",
+  "keywords": [
+    "lofi hip hop",
+    "lofi jazz",
+    "study beats",
+    "chill beats",
+    "music for coding"
+  ],
+  "hashtags": [
+    "#lofi",
+    "#lofihiphop",
+    "#lofijazz",
+    "#studybeats",
+    "#chillbeats"
+  ],
+  "visual": {
+    "dim_opacity": 0.16,
+    "brightness": -0.03,
+    "saturation": 0.92,
+    "box_color": "#151A1F",
+    "box_opacity": 0.36,
+    "accent_color": "#D9AE72",
+    "title_color": "#F8F2E8",
+    "subtitle_color": "#D5E0EA",
+    "box_x": "(iw*0.06)",
+    "box_y": "(ih*0.68)",
+    "box_width": "(iw*0.46)",
+    "box_height": "(ih*0.20)",
+    "accent_x": "(iw*0.06)",
+    "accent_y": "(ih*0.66)",
+    "accent_width": "(iw*0.15)",
+    "accent_height": 10,
+    "title_x": "(w*0.09)",
+    "title_y": "(h*0.72)",
+    "subtitle_x": "(w*0.09)",
+    "subtitle_y": "(h*0.82)",
+    "title_font_size": 60,
+    "subtitle_font_size": 30
+  }
+}

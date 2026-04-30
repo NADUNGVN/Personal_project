@@ -1,3 +1,13 @@
+"""
+story_tts.py — Story TTS using VibeVoice (Davis voice)
+
+Reads the synopsis directly from story_details.json,
+splits it into paragraphs, synthesises each paragraph with
+VibeVoice and writes:
+  - {safe_title}_podcast.mp3
+  - {safe_title}_subtitles.json  (segment-level timestamps)
+"""
+
 import csv
 import json
 import os
@@ -5,7 +15,7 @@ import re
 import shutil
 import sys
 from datetime import datetime
-from typing import Dict, List
+from typing import List
 
 import imageio_ffmpeg
 import numpy as np
@@ -13,259 +23,250 @@ import soundfile as sf
 from pydub import AudioSegment
 from pydub.silence import detect_leading_silence
 
+# ---------------------------------------------------------------------------
 # Configure ffmpeg path for pydub
+# ---------------------------------------------------------------------------
 ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
 AudioSegment.converter = ffmpeg_exe
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-INPUT_DIR = os.path.join(BASE_DIR, "input")
-TOPICS_FILE = os.path.join(INPUT_DIR, "topics.txt")
-STORY_DETAILS_FILE = os.path.join(INPUT_DIR, "story_details.json")
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+BASE_DIR             = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+INPUT_DIR            = os.path.join(BASE_DIR, "input")
+STORY_DETAILS_FILE   = os.path.join(INPUT_DIR, "story_details.json")
 CURRENT_OUT_DIR_FILE = os.path.join(INPUT_DIR, "current_output_dir.txt")
 
 if os.path.exists(CURRENT_OUT_DIR_FILE):
-    with open(CURRENT_OUT_DIR_FILE, "r", encoding="utf-8") as f:
-        OUTPUT_DIR = f.read().strip()
+    with open(CURRENT_OUT_DIR_FILE, "r", encoding="utf-8") as _f:
+        OUTPUT_DIR = _f.read().strip()
 else:
     OUTPUT_DIR = os.path.join(BASE_DIR, "output")
 
 TMP_AUDIO_DIR = os.path.join(OUTPUT_DIR, "tmp_story_tts")
-DATA_DIR = os.path.join(os.path.dirname(BASE_DIR), "vibe-voice", "data")
-DATASET_CSV = os.path.join(DATA_DIR, "dataset_metadata.csv")
 
-VIBE_VOICE_ROOT = os.path.join(os.path.dirname(BASE_DIR), "vibe-voice")
+# ---------------------------------------------------------------------------
+# VibeVoice
+# ---------------------------------------------------------------------------
+VIBE_VOICE_ROOT  = os.path.join(os.path.dirname(BASE_DIR), "vibe-voice")
 sys.path.insert(0, VIBE_VOICE_ROOT)
 from predict import load_model_and_processor, predict  # noqa: E402
 
-VOICES_DIR = os.path.join(VIBE_VOICE_ROOT, "VibeVoice", "demo", "voices", "streaming_model")
-
-# Only Davis is prioritized
+VOICES_DIR       = os.path.join(VIBE_VOICE_ROOT, "VibeVoice", "demo", "voices", "streaming_model")
 DAVIS_CANDIDATES = ["en-Davis_man.pt", "en-Frank_man.pt"]
-CFG_SCALE = 1.6 # A bit more expressive for storytelling
-TESTING_MODE = False
-TESTING_MAX_TURNS = 12
+CFG_SCALE        = 1.6   # slightly expressive for storytelling
+
+# ---------------------------------------------------------------------------
+# Dataset CSV (kept for training compatibility)
+# ---------------------------------------------------------------------------
+DATA_DIR    = os.path.join(os.path.dirname(BASE_DIR), "vibe-voice", "data")
+DATASET_CSV = os.path.join(DATA_DIR, "dataset_metadata.csv")
+
+
+# ===========================================================================
+# Helpers
+# ===========================================================================
+
+def make_safe_name(text: str) -> str:
+    return "".join(c for c in text if c.isalnum() or c == " ").rstrip().replace(" ", "_")
 
 
 def setup_directories():
-    os.makedirs(INPUT_DIR, exist_ok=True)
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    os.makedirs(INPUT_DIR,    exist_ok=True)
+    os.makedirs(OUTPUT_DIR,   exist_ok=True)
     os.makedirs(TMP_AUDIO_DIR, exist_ok=True)
-    os.makedirs(DATA_DIR, exist_ok=True)
-
+    os.makedirs(DATA_DIR,     exist_ok=True)
     if not os.path.exists(DATASET_CSV):
         with open(DATASET_CSV, mode="w", newline="", encoding="utf-8") as csv_file:
-            writer = csv.writer(csv_file)
-            writer.writerow(["wav_filename", "speaker", "text_display"])
+            csv.writer(csv_file).writerow(["wav_filename", "speaker", "text_display"])
 
 
-def cleanup_tmp_audio():
-    print("Cleaning up temporary audio files...")
+def cleanup_tmp():
     if os.path.exists(TMP_AUDIO_DIR):
         try:
             shutil.rmtree(TMP_AUDIO_DIR)
         except Exception as exc:
-            print(f"Warning: Could not remove temporary directory {TMP_AUDIO_DIR}: {exc}")
+            print(f"Warning: could not remove {TMP_AUDIO_DIR}: {exc}")
 
 
-def resolve_voice_path(candidates: List[str]) -> str:
-    for voice_file in candidates:
-        candidate_path = os.path.join(VOICES_DIR, voice_file)
-        if os.path.exists(candidate_path):
-            return candidate_path
+def resolve_voice(candidates: List[str]) -> str:
+    for name in candidates:
+        path = os.path.join(VOICES_DIR, name)
+        if os.path.exists(path):
+            return path
     raise FileNotFoundError(
-        f"No matching voice preset found in {VOICES_DIR} for candidates: {candidates}"
+        f"No voice preset found in {VOICES_DIR} for candidates: {candidates}"
     )
 
 
-def strip_kokoro_markup(text: str) -> str:
-    # Converts: [word](+2) or [word](-1) -> word
-    return re.sub(r"\[([^\]]+)\]\([+-]?\d+\)", r"\1", text)
-
-
-def normalize_audio_np(audio_np):
-    import torch
-
-    if isinstance(audio_np, torch.Tensor):
-        audio_np = audio_np.cpu().float().numpy()
-    elif hasattr(audio_np, "dtype"):
-        audio_np = audio_np.astype(np.float32)
-
-    if hasattr(audio_np, "ndim") and audio_np.ndim > 1:
+def normalise_audio(audio_np):
+    """Convert tensor / multi-dim array → float32 mono numpy array."""
+    try:
+        import torch
+        if isinstance(audio_np, torch.Tensor):
+            audio_np = audio_np.cpu().float().numpy()
+    except ImportError:
+        pass
+    if hasattr(audio_np, "dtype"):
+        audio_np = np.array(audio_np, dtype=np.float32)
+    if audio_np.ndim > 1:
         audio_np = audio_np.squeeze()
-
     return audio_np
 
 
-def should_skip_audio(item: Dict, idx: int) -> bool:
-    item_type = item.get("type", "dialogue")
-    speaker = item.get("speaker", "")
-    text_tts = item.get("text_tts", "")
+def split_synopsis_to_paragraphs(synopsis: str) -> List[str]:
+    """
+    Split story synopsis into natural reading chunks.
 
-    if item_type == "heading" and (not text_tts.strip() or not speaker.strip()):
-        return True
-    return False
+    Strategy:
+      1. Split on blank lines (paragraph breaks).
+      2. If a paragraph is very long (> MAX_CHARS) split further at sentence
+         boundaries so TTS doesn't receive an enormous string.
+    """
+    MAX_CHARS = 400
+
+    raw_paras = [p.strip() for p in re.split(r"\n\s*\n", synopsis)]
+    raw_paras = [p for p in raw_paras if p]
+
+    chunks: List[str] = []
+    for para in raw_paras:
+        if len(para) <= MAX_CHARS:
+            chunks.append(para)
+        else:
+            # Split at sentence-ending punctuation
+            sentences = re.split(r"(?<=[.!?])\s+", para)
+            current = ""
+            for sent in sentences:
+                if not current:
+                    current = sent
+                elif len(current) + 1 + len(sent) <= MAX_CHARS:
+                    current += " " + sent
+                else:
+                    chunks.append(current)
+                    current = sent
+            if current:
+                chunks.append(current)
+
+    return chunks
 
 
-def process_story_tts(topic: str, model, processor, device: str):
+# ===========================================================================
+# Core TTS pipeline
+# ===========================================================================
+
+def process_story_tts(title: str, synopsis: str, model, processor, device: str):
+    safe_name = make_safe_name(title)
+    chunks    = split_synopsis_to_paragraphs(synopsis)
+
+    print(f"\n[TTS] '{title}' — {len(chunks)} paragraphs to synthesise")
+
+    voice_path = resolve_voice(DAVIS_CANDIDATES)
+    print(f"[TTS] Voice: {os.path.basename(voice_path)}")
+
     current_time_str = datetime.now().strftime("%Y%m%d_%H%M")
-    safe_topic_name = "".join([c for c in topic if c.isalnum() or c == " "]).rstrip().replace(" ", "_")
-    json_filename = os.path.join(OUTPUT_DIR, f"{safe_topic_name}_script.json")
+    speaker_safe     = "davis"
+    speaker_dir      = os.path.join(DATA_DIR, speaker_safe, f"{current_time_str}_{safe_name}")
+    os.makedirs(speaker_dir, exist_ok=True)
 
-    if not os.path.exists(json_filename):
-        print(f"Warning: JSON file {json_filename} not found. Skipping topic '{topic}'.")
-        return
-
-    print(f"\n[{topic}] Starting VibeVoice STORY TTS Pipeline...")
-
-    with open(json_filename, "r", encoding="utf-8") as f:
-        try:
-            script_data = json.load(f)
-        except json.JSONDecodeError as exc:
-            print(f"Error reading JSON {json_filename}: {exc}")
-            return
-
-    script = script_data.get("script", [])
-    if not script:
-        print(f"Warning: Valid script structure not found in {json_filename}.")
-        return
-
+    # Re-create tmp dir fresh
     if os.path.exists(TMP_AUDIO_DIR):
         shutil.rmtree(TMP_AUDIO_DIR)
     os.makedirs(TMP_AUDIO_DIR, exist_ok=True)
 
-    items = [item for item in script if item.get("type", "") in ["dialogue", "heading"]]
-    if TESTING_MODE:
-        items = items[:TESTING_MAX_TURNS]
+    subtitles: list  = []
+    final_audio      = AudioSegment.empty()
+    current_ms       = 0
 
-    total_turns = len(items)
-    subtitles = []
-    current_time_ms = 0
-    final_audio = AudioSegment.empty()
-
-    print(f"Found {total_turns} turns to process for Davis.")
-
-    for idx, item in enumerate(items, start=1):
-        item_type = item.get("type", "dialogue")
-        speaker = item.get("speaker", "Davis")
-        text_display = item.get("text_display", item.get("text", ""))
-        text_tts = item.get("text_tts", text_display)
-
-        if should_skip_audio(item, idx):
-            print(f"  [{idx}/{total_turns}] Skipping mute heading: '{text_display}'")
-            subtitles.append(
-                {
-                    "idx": idx,
-                    "type": item_type,
-                    "speaker": speaker,
-                    "text": text_display,
-                    "text_tts": text_tts,
-                    "start_time_sec": current_time_ms / 1000.0,
-                    "end_time_sec": current_time_ms / 1000.0,
-                    "duration_sec": 0,
-                    "voice_used": "None",
-                }
-            )
-            continue
-
-        text_tts_clean = strip_kokoro_markup(text_tts)
+    for idx, chunk in enumerate(chunks, start=1):
+        print(f"  [{idx}/{len(chunks)}] {chunk[:60]}{'...' if len(chunk) > 60 else ''}")
 
         try:
-            voice_path = resolve_voice_path(DAVIS_CANDIDATES)
-
-            result = predict(
-                text=text_tts_clean,
-                model=model,
-                processor=processor,
-                device=device,
-                voice_preset_path=voice_path,
-                cfg_scale=CFG_SCALE,
-                verbose=False,
+            result   = predict(
+                text               = chunk,
+                model              = model,
+                processor          = processor,
+                device             = device,
+                voice_preset_path  = voice_path,
+                cfg_scale          = CFG_SCALE,
+                verbose            = False,
             )
-
-            audio_np = normalize_audio_np(result["audio"])
+            audio_np    = normalise_audio(result["audio"])
             sample_rate = result["sample_rate"]
-
-            tmp_wav_path = os.path.join(TMP_AUDIO_DIR, f"tmp_turn_{idx}.wav")
-            sf.write(tmp_wav_path, audio_np, sample_rate)
-            turn_audio = AudioSegment.from_wav(tmp_wav_path)
-            os.remove(tmp_wav_path)
-
         except Exception as exc:
             import traceback
-
-            print(f"  [{idx}/{total_turns}] ERROR generating audio: {exc}")
+            print(f"  [{idx}] ERROR: {exc}")
             traceback.print_exc()
             continue
 
-        trim_start = detect_leading_silence(turn_audio, silence_threshold=-45.0)
-        trim_end = detect_leading_silence(turn_audio.reverse(), silence_threshold=-45.0)
-        end_idx_audio = len(turn_audio) - trim_end
+        # Write temp WAV, load as AudioSegment
+        tmp_wav = os.path.join(TMP_AUDIO_DIR, f"chunk_{idx}.wav")
+        sf.write(tmp_wav, audio_np, sample_rate)
+        seg = AudioSegment.from_wav(tmp_wav)
+        os.remove(tmp_wav)
 
-        if trim_start < end_idx_audio:
-            turn_audio = turn_audio[trim_start:end_idx_audio]
+        # Trim leading / trailing silence
+        t_start = detect_leading_silence(seg, silence_threshold=-45.0)
+        t_end   = detect_leading_silence(seg.reverse(), silence_threshold=-45.0)
+        end_idx = len(seg) - t_end
+        if t_start < end_idx:
+            seg = seg[t_start:end_idx]
 
-        pause_duration = 400 if item_type == "heading" else 200 # slightly longer pauses for storytelling
-        turn_audio += AudioSegment.silent(duration=pause_duration)
+        # Add short pause between paragraphs
+        seg += AudioSegment.silent(duration=350)
 
-        speaker_name = "Davis"
-        speaker_safe = "davis"
-        speaker_topic_dir = os.path.join(DATA_DIR, speaker_safe, f"{current_time_str}_{safe_topic_name}")
-        os.makedirs(speaker_topic_dir, exist_ok=True)
+        # Persist WAV for dataset
+        base_fn   = f"{speaker_safe}_{idx}"
+        wav_path  = os.path.join(speaker_dir, f"{base_fn}.wav")
+        txt_path  = os.path.join(speaker_dir, f"{base_fn}.txt")
+        seg.export(wav_path, format="wav")
+        with open(txt_path, "w", encoding="utf-8") as tf:
+            tf.write(chunk)
 
-        base_filename = f"{speaker_safe}_{idx}"
-        turn_wav_path = os.path.join(speaker_topic_dir, f"{base_filename}.wav")
-        turn_audio.export(turn_wav_path, format="wav")
-
-        turn_txt_path = os.path.join(speaker_topic_dir, f"{base_filename}.txt")
-        with open(turn_txt_path, "w", encoding="utf-8") as text_file:
-            text_file.write(text_display)
-
+        # Append to CSV
         try:
-            with open(DATASET_CSV, mode="a", newline="", encoding="utf-8") as csv_file:
-                writer = csv.writer(csv_file)
-                relative_csv_path = (
-                    f"data/{speaker_safe}/{current_time_str}_{safe_topic_name}/{base_filename}.wav"
-                )
-                writer.writerow([relative_csv_path, speaker_name, text_display])
+            rel_csv = f"data/{speaker_safe}/{current_time_str}_{safe_name}/{base_fn}.wav"
+            with open(DATASET_CSV, mode="a", newline="", encoding="utf-8") as cf:
+                csv.writer(cf).writerow([rel_csv, "Davis", chunk])
         except Exception as exc:
-            print(f"Warning: Could not write to CSV: {exc}")
+            print(f"Warning: CSV write failed: {exc}")
 
-        duration_ms = len(turn_audio)
-        subtitles.append(
-            {
-                "idx": idx,
-                "type": item_type,
-                "speaker": speaker_name,
-                "text": text_display,
-                "text_tts": text_tts_clean,
-                "start_time_sec": current_time_ms / 1000.0,
-                "end_time_sec": (current_time_ms + duration_ms) / 1000.0,
-                "duration_sec": duration_ms / 1000.0,
-                "voice_used": os.path.basename(voice_path),
-            }
-        )
+        duration_ms = len(seg)
+        subtitles.append({
+            "idx":            idx,
+            "type":           "dialogue",
+            "speaker":        "Davis",
+            "text":           chunk,
+            "start_time_sec": current_ms / 1000.0,
+            "end_time_sec":   (current_ms + duration_ms) / 1000.0,
+            "duration_sec":   duration_ms / 1000.0,
+            "voice_used":     os.path.basename(voice_path),
+        })
 
-        final_audio += turn_audio
-        current_time_ms += duration_ms
+        final_audio  += seg
+        current_ms   += duration_ms
+        print(f"         → {duration_ms / 1000.0:.1f}s  (total {current_ms / 1000.0:.1f}s)")
 
-        print(
-            f"  [{idx}/{total_turns}] Generated '{os.path.basename(voice_path)}' "
-            f"for Davis ({duration_ms / 1000.0:.1f}s)"
-        )
+    if len(final_audio) == 0:
+        print("[TTS] ERROR: no audio could be assembled — check VibeVoice installation.")
+        sys.exit(1)
 
-    if len(final_audio) > 0:
-        print(f"[{topic}] Assembling and exporting {len(final_audio) / 1000.0:.2f}s audio...")
-        mp3_filename = os.path.join(OUTPUT_DIR, f"{safe_topic_name}_podcast.mp3")
-        final_audio.export(mp3_filename, format="mp3", bitrate="192k")
-        print(f"[{topic}] MP3 exported to: {mp3_filename}")
+    total_sec = len(final_audio) / 1000.0
+    print(f"\n[TTS] Assembling {total_sec:.1f}s audio …")
 
-        subs_filename = os.path.join(OUTPUT_DIR, f"{safe_topic_name}_subtitles.json")
-        with open(subs_filename, "w", encoding="utf-8") as f:
-            json.dump(subtitles, f, ensure_ascii=False, indent=2)
-        print(f"[{topic}] Subtitles saved to: {subs_filename}")
-    else:
-        print(f"[{topic}] Error: No audio could be assembled.")
+    mp3_path  = os.path.join(OUTPUT_DIR, f"{safe_name}_podcast.mp3")
+    subs_path = os.path.join(OUTPUT_DIR, f"{safe_name}_subtitles.json")
 
+    final_audio.export(mp3_path, format="mp3", bitrate="192k")
+    print(f"[TTS] MP3  → {mp3_path}")
+
+    with open(subs_path, "w", encoding="utf-8") as f:
+        json.dump(subtitles, f, ensure_ascii=False, indent=2)
+    print(f"[TTS] Subs → {subs_path}")
+
+
+# ===========================================================================
+# Entry point
+# ===========================================================================
 
 def main():
     setup_directories()
@@ -275,21 +276,29 @@ def main():
         sys.exit(1)
 
     with open(STORY_DETAILS_FILE, "r", encoding="utf-8-sig") as f:
-        story_details = json.load(f)
-        
-    topic = story_details.get("title", "Unknown Story")
+        story = json.load(f)
 
-    print("Initializing VibeVoice-Realtime-0.5B Pipeline... (this may take a moment)")
+    title   = story.get("title",   "Unknown Story")
+    synopsis = story.get("synopsis", "")
+
+    if not synopsis.strip():
+        print("ERROR: synopsis is empty in story_details.json")
+        sys.exit(1)
+
+    print(f"[TTS] Story  : {title}")
+    print(f"[TTS] Length : {len(synopsis)} chars")
+    print("Initialising VibeVoice-Realtime-0.5B … (first run may take a moment)")
+
     model, processor, device = load_model_and_processor(
-        model_path="microsoft/VibeVoice-Realtime-0.5B",
-        device="auto",
-        num_ddpm_steps=5,
+        model_path     = "microsoft/VibeVoice-Realtime-0.5B",
+        device         = "auto",
+        num_ddpm_steps = 5,
     )
 
-    process_story_tts(topic, model, processor, device)
+    process_story_tts(title, synopsis, model, processor, device)
 
-    cleanup_tmp_audio()
-    print("\nStorytelling TTS processed successfully via VibeVoice!")
+    cleanup_tmp()
+    print("\n[TTS] Done — all paragraphs synthesised via VibeVoice!\n")
 
 
 if __name__ == "__main__":

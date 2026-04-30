@@ -1,0 +1,20 @@
+{
+  "name": "lofidailystudio",
+  "dataset_type": "music",
+  "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+  "url": "https://www.youtube.com/watch?v=ncIaz-1mAnY",
+  "tags": [
+    "lofi",
+    "chill",
+    "lofi hiphop",
+    "lofi jazz"
+  ],
+  "max_items": null,
+  "enabled": true,
+  "slug": "lofidailystudio",
+  "source_entry_key": "f47bad7106",
+  "channel_title": "DAILY No Copyright For You – 서울행 Seoul Bound by Declan DP 🎵",
+  "channel_id": "UCht8qITGkBvXKsR1Byln-wA",
+  "extractor": "Youtube",
+  "updated_at": "2026-03-18T12:55:55"
+}

@@ -1,0 +1,49 @@
+{
+  "order": 2,
+  "slug": "study_with_me_work_with_me",
+  "channel_name": "Study with Me / Work with Me",
+  "positioning": "Clear focus packaging for deep work, revision, pomodoro blocks and quiet office flow.",
+  "use_case": "students, office workers and remote deep-work sessions",
+  "overlay_title_template": "Study With Me | {duration_label}",
+  "overlay_subtitle_template": "Focus music for revision, reading, writing and deep work",
+  "metadata_title_template": "Study With Me | {title} | Focus Music for Deep Work",
+  "metadata_summary_template": "{concept} Reframed as a productivity-first upload for long study blocks, revision and work sessions.",
+  "keywords": [
+    "study with me",
+    "work with me",
+    "focus music",
+    "deep work music",
+    "pomodoro music"
+  ],
+  "hashtags": [
+    "#studywithme",
+    "#workwithme",
+    "#focusmusic",
+    "#deepwork",
+    "#pomodoro"
+  ],
+  "visual": {
+    "dim_opacity": 0.22,
+    "brightness": -0.05,
+    "saturation": 0.88,
+    "box_color": "#0F1718",
+    "box_opacity": 0.40,
+    "accent_color": "#8CCB9B",
+    "title_color": "#F2FBF4",
+    "subtitle_color": "#D7E8DB",
+    "box_x": "(iw*0.06)",
+    "box_y": "(ih*0.12)",
+    "box_width": "(iw*0.44)",
+    "box_height": "(ih*0.19)",
+    "accent_x": "(iw*0.06)",
+    "accent_y": "(ih*0.10)",
+    "accent_width": "(iw*0.14)",
+    "accent_height": 10,
+    "title_x": "(w*0.09)",
+    "title_y": "(h*0.16)",
+    "subtitle_x": "(w*0.09)",
+    "subtitle_y": "(h*0.26)",
+    "title_font_size": 58,
+    "subtitle_font_size": 29
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "source_name": "lofidailystudio",
+  "dataset_type": "music",
+  "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+  "source_url": "https://www.youtube.com/watch?v=CfH4-NOaw3Q",
+  "tags": [
+    "lofi",
+    "chill",
+    "lofi hiphop",
+    "lofi jazz"
+  ],
+  "id": "CfH4-NOaw3Q",
+  "title": "DAILY No Copyright For You – Alone by Qlowdy 🎵",
+  "uploader": "Audio Library",
+  "channel": "Audio Library",
+  "webpage_url": "https://www.youtube.com/watch?v=CfH4-NOaw3Q",
+  "duration_seconds": 195,
+  "downloaded_at": "2026-03-18T12:58:07",
+  "grouped_files": {
+    "audio": [
+      "audio\\CfH4-NOaw3Q.m4a"
+    ],
+    "metadata": [
+      "metadata\\CfH4-NOaw3Q.description",
+      "metadata\\CfH4-NOaw3Q.info.json",
+      "metadata\\manifest.json"
+    ],
+    "thumbnails": [
+      "thumbnails\\CfH4-NOaw3Q.webp"
+    ],
+    "other": [
+      "other\\CfH4-NOaw3Q.mp4"
+    ]
+  }
+}

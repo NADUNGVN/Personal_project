@@ -1,0 +1,43 @@
+{
+  "sources": [
+    {
+      "name": "replace_music_channel_1",
+      "dataset_type": "music",
+      "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+      "url": "https://www.youtube.com/@replace-me",
+      "tags": [
+        "lofi",
+        "study",
+        "focus"
+      ],
+      "max_items": 50,
+      "enabled": true
+    },
+    {
+      "name": "replace_music_channel_2",
+      "dataset_type": "music",
+      "purpose": "music_for_study",
+      "url": "https://www.youtube.com/@replace-me-too",
+      "tags": [
+        "jazz",
+        "chill",
+        "work"
+      ],
+      "max_items": 50,
+      "enabled": true
+    },
+    {
+      "name": "replace_ambient_channel_1",
+      "dataset_type": "ambient",
+      "purpose": "piano_ambient",
+      "url": "https://www.youtube.com/@replace-ambient",
+      "tags": [
+        "rain",
+        "sleep",
+        "nature"
+      ],
+      "max_items": 50,
+      "enabled": true
+    }
+  ]
+}

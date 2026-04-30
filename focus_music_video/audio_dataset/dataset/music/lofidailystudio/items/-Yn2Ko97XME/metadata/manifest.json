@@ -1,0 +1,35 @@
+{
+  "source_name": "lofidailystudio",
+  "dataset_type": "music",
+  "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+  "source_url": "https://www.youtube.com/watch?v=-Yn2Ko97XME",
+  "tags": [
+    "lofi",
+    "chill",
+    "lofi hiphop",
+    "lofi jazz"
+  ],
+  "id": "-Yn2Ko97XME",
+  "title": "DAILY No Copyright For You – Set Me Free by chillity 🎵",
+  "uploader": "Audio Library",
+  "channel": "Audio Library",
+  "webpage_url": "https://www.youtube.com/watch?v=-Yn2Ko97XME",
+  "duration_seconds": 125,
+  "downloaded_at": "2026-03-18T12:58:02",
+  "grouped_files": {
+    "audio": [
+      "audio\\-Yn2Ko97XME.m4a"
+    ],
+    "metadata": [
+      "metadata\\-Yn2Ko97XME.description",
+      "metadata\\-Yn2Ko97XME.info.json",
+      "metadata\\manifest.json"
+    ],
+    "thumbnails": [
+      "thumbnails\\-Yn2Ko97XME.webp"
+    ],
+    "other": [
+      "other\\-Yn2Ko97XME.mp4"
+    ]
+  }
+}

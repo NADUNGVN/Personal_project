@@ -1,0 +1,35 @@
+{
+  "source_name": "lofidailystudio",
+  "dataset_type": "music",
+  "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+  "source_url": "https://www.youtube.com/watch?v=GInxP8vhKWQ",
+  "tags": [
+    "lofi",
+    "chill",
+    "lofi hiphop",
+    "lofi jazz"
+  ],
+  "id": "GInxP8vhKWQ",
+  "title": "DAILY No Copyright For You – Feeling by Riyhsal 🎵",
+  "uploader": "Audio Library",
+  "channel": "Audio Library",
+  "webpage_url": "https://www.youtube.com/watch?v=GInxP8vhKWQ",
+  "duration_seconds": 133,
+  "downloaded_at": "2026-03-18T12:58:10",
+  "grouped_files": {
+    "audio": [
+      "audio\\GInxP8vhKWQ.m4a"
+    ],
+    "metadata": [
+      "metadata\\GInxP8vhKWQ.description",
+      "metadata\\GInxP8vhKWQ.info.json",
+      "metadata\\manifest.json"
+    ],
+    "thumbnails": [
+      "thumbnails\\GInxP8vhKWQ.webp"
+    ],
+    "other": [
+      "other\\GInxP8vhKWQ.mp4"
+    ]
+  }
+}

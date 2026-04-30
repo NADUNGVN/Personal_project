@@ -1,0 +1,32 @@
+{
+  "source_name": "lofidailystudio",
+  "dataset_type": "music",
+  "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+  "source_url": "https://www.youtube.com/watch?v=mU2a4E4r8GI",
+  "tags": [
+    "lofi",
+    "chill",
+    "lofi hiphop",
+    "lofi jazz"
+  ],
+  "id": "mU2a4E4r8GI",
+  "title": "DAILY No Copyright For You – ONYX by Ferco & tubebackr 🎵",
+  "uploader": "Audio Library",
+  "channel": "Audio Library",
+  "webpage_url": "https://www.youtube.com/watch?v=mU2a4E4r8GI",
+  "duration_seconds": 268,
+  "downloaded_at": "2026-03-18T12:54:09",
+  "grouped_files": {
+    "audio": [
+      "audio\\mU2a4E4r8GI.m4a"
+    ],
+    "metadata": [
+      "metadata\\mU2a4E4r8GI.description",
+      "metadata\\mU2a4E4r8GI.info.json"
+    ],
+    "thumbnails": [
+      "thumbnails\\mU2a4E4r8GI.webp"
+    ],
+    "other": []
+  }
+}

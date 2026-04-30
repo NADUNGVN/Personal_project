@@ -1,0 +1,49 @@
+{
+  "order": 3,
+  "slug": "ambient_aesthetic_video",
+  "channel_name": "Ambient Video / Aesthetic Video",
+  "positioning": "Minimal ambient packaging centered on atmosphere, slow visuals and aesthetic calm.",
+  "use_case": "viewers who want visual ambience for reading, journaling and calm spaces",
+  "overlay_title_template": "{title}",
+  "overlay_subtitle_template": "Ambient aesthetic music for focus, calm and visual atmosphere",
+  "metadata_title_template": "{title} | Ambient Aesthetic Video for Relaxing Focus",
+  "metadata_summary_template": "{concept} Packaged as an ambient aesthetic video with soft motion, calm space and visual stillness.",
+  "keywords": [
+    "ambient video",
+    "aesthetic video",
+    "ambient focus music",
+    "calm atmosphere",
+    "reading ambience"
+  ],
+  "hashtags": [
+    "#ambientvideo",
+    "#aestheticvideo",
+    "#ambientmusic",
+    "#readingambience",
+    "#calmspace"
+  ],
+  "visual": {
+    "dim_opacity": 0.12,
+    "brightness": -0.01,
+    "saturation": 1.02,
+    "box_color": "#1B1D24",
+    "box_opacity": 0.24,
+    "accent_color": "#C8B7E6",
+    "title_color": "#F8F8FC",
+    "subtitle_color": "#E5E0F0",
+    "box_x": "(iw*0.06)",
+    "box_y": "(ih*0.74)",
+    "box_width": "(iw*0.40)",
+    "box_height": "(ih*0.14)",
+    "accent_x": "(iw*0.06)",
+    "accent_y": "(ih*0.72)",
+    "accent_width": "(iw*0.10)",
+    "accent_height": 8,
+    "title_x": "(w*0.09)",
+    "title_y": "(h*0.77)",
+    "subtitle_x": "(w*0.09)",
+    "subtitle_y": "(h*0.83)",
+    "title_font_size": 54,
+    "subtitle_font_size": 26
+  }
+}

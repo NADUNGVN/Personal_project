@@ -1,0 +1,32 @@
+{
+  "source_name": "lofidailystudio",
+  "dataset_type": "music",
+  "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+  "source_url": "https://www.youtube.com/watch?v=ncIaz-1mAnY",
+  "tags": [
+    "lofi",
+    "chill",
+    "lofi hiphop",
+    "lofi jazz"
+  ],
+  "id": "ncIaz-1mAnY",
+  "title": "DAILY No Copyright For You – 서울행 Seoul Bound by Declan DP 🎵",
+  "uploader": "Audio Library",
+  "channel": "Audio Library",
+  "webpage_url": "https://www.youtube.com/watch?v=ncIaz-1mAnY",
+  "duration_seconds": 181,
+  "downloaded_at": "2026-03-18T12:56:20",
+  "grouped_files": {
+    "audio": [
+      "audio\\ncIaz-1mAnY.m4a"
+    ],
+    "metadata": [
+      "metadata\\ncIaz-1mAnY.description",
+      "metadata\\ncIaz-1mAnY.info.json"
+    ],
+    "thumbnails": [
+      "thumbnails\\ncIaz-1mAnY.webp"
+    ],
+    "other": []
+  }
+}

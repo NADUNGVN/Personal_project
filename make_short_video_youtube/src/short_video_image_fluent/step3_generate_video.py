@@ -736,7 +736,7 @@ def main():
     # 1. Image Protocol
     if not img_path.exists():
         should_generate_prompt = prompt_yes_no(
-            "Ban co muon tao prompt de sinh anh khong",
+            "Do you want to generate a prompt to create an image?",
             default=False,
         )
 

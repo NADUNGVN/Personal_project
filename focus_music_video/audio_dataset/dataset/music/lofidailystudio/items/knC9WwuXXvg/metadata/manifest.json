@@ -1,0 +1,32 @@
+{
+  "source_name": "lofidailystudio",
+  "dataset_type": "music",
+  "purpose": "lofi_chill_lofi_hiphop_lofi_jazz",
+  "source_url": "https://www.youtube.com/watch?v=knC9WwuXXvg",
+  "tags": [
+    "lofi",
+    "chill",
+    "lofi hiphop",
+    "lofi jazz"
+  ],
+  "id": "knC9WwuXXvg",
+  "title": "DAILY No Copyright For You – Arizona Echoes by tubebackr & Filo Starquez 🎵",
+  "uploader": "Audio Library",
+  "channel": "Audio Library",
+  "webpage_url": "https://www.youtube.com/watch?v=knC9WwuXXvg",
+  "duration_seconds": 190,
+  "downloaded_at": "2026-03-18T12:56:42",
+  "grouped_files": {
+    "audio": [
+      "audio\\knC9WwuXXvg.m4a"
+    ],
+    "metadata": [
+      "metadata\\knC9WwuXXvg.description",
+      "metadata\\knC9WwuXXvg.info.json"
+    ],
+    "thumbnails": [
+      "thumbnails\\knC9WwuXXvg.webp"
+    ],
+    "other": []
+  }
+}
