@@ -44,10 +44,12 @@ TEXT_MODEL = "google/gemini-2.5-flash"
 # Video Layout Configuration
 VIDEO_WIDTH = 1440
 VIDEO_HEIGHT = 2560
-TOP_HEIGHT = int(VIDEO_HEIGHT * 0.3)
-BOTTOM_HEIGHT = VIDEO_HEIGHT - TOP_HEIGHT
+TOP_SAFE_AREA = 250
+IMAGE_HEIGHT = int(VIDEO_HEIGHT * 0.3)
+TEXT_AREA_START_Y = TOP_SAFE_AREA + IMAGE_HEIGHT
+TEXT_AREA_HEIGHT = VIDEO_HEIGHT - TEXT_AREA_START_Y
 
-FONT_SIZE = 65
+FONT_SIZE = 85
 FONT_PATH = "arialbd.ttf"
 TITLE_COLOR = "green"
 TEXT_COLOR = "black"
@@ -310,7 +312,7 @@ def create_text_layout(text, width, height, font_size, color_name, title_text=No
     # Title Drawing
     start_y = 0
     if title_text:
-        t_font = load_font(int(font_size*1.6))
+        t_font = load_font(int(font_size*1.3))
         lines = []
         c_line = []
         for w in title_text.split():
@@ -328,9 +330,10 @@ def create_text_layout(text, width, height, font_size, color_name, title_text=No
         start_y = y + 40
         
     # Body Text Layout
-    max_w = width - 160 
-    available_height = height - start_y - 20
-    if available_height < 60: available_height = height - start_y
+    max_w = width - 300 
+    bottom_safe_area = 500
+    available_height = height - start_y - bottom_safe_area
+    if available_height < 60: available_height = height - start_y - 100
 
     def build_lines(active_font):
         lines = []; c_line = []
@@ -345,7 +348,7 @@ def create_text_layout(text, width, height, font_size, color_name, title_text=No
         return lines, get_wh
 
     body_font_size = font_size
-    line_spacing_factor = 2.0
+    line_spacing_factor = 1.6
     while True:
         font = load_font(body_font_size)
         lines, get_wh = build_lines(font)
@@ -375,7 +378,6 @@ def create_text_layout(text, width, height, font_size, color_name, title_text=No
         if align == "justify" and len(line) > 1 and li < len(lines) - 1:
             extra = max_w - sum_word_w
             gap = extra / (len(line) - 1) if extra > 0 else space_w
-            if gap > space_w * 3.0: gap = space_w
             curr_x = left_margin
         else:
             curr_x = left_margin
@@ -588,28 +590,26 @@ def render_video(
     # ── PRE-RENDER ALL STATIC LAYERS INTO RAM ──────────────────────────────
     print("[INFO] Pre-rendering static layers into RAM...")
 
-    # Top image (cover)
-    top_pil = _resize_and_crop_pil(
-        Image.open(str(image_path)).convert("RGB"), VIDEO_WIDTH, TOP_HEIGHT
-    )
-
-    # Bottom background
+    # Background (phủ kín toàn bộ màn hình)
     bg_bottom_path = "D:/work/Personal_project/make_short_video_youtube/image/image_background/ChatGPT Image 13_35_23 23 thg 1, 2026.png"
     if os.path.exists(bg_bottom_path):
         bg_pil = _resize_and_crop_pil(
-            Image.open(bg_bottom_path).convert("RGB"), VIDEO_WIDTH, BOTTOM_HEIGHT
+            Image.open(bg_bottom_path).convert("RGB"), VIDEO_WIDTH, VIDEO_HEIGHT
         )
     else:
-        bg_pil = Image.new("RGB", (VIDEO_WIDTH, BOTTOM_HEIGHT), (20, 20, 20))
+        bg_pil = Image.new("RGB", (VIDEO_WIDTH, VIDEO_HEIGHT), (20, 20, 20))
 
-    # Full canvas template (top + bottom stitched)
-    canvas_template = Image.new("RGB", (VIDEO_WIDTH, VIDEO_HEIGHT))
-    canvas_template.paste(top_pil, (0, 0))
-    canvas_template.paste(bg_pil, (0, TOP_HEIGHT))
+    canvas_template = bg_pil.copy()
+
+    # Top image (cover)
+    top_pil = _resize_and_crop_pil(
+        Image.open(str(image_path)).convert("RGB"), VIDEO_WIDTH, IMAGE_HEIGHT
+    )
+    canvas_template.paste(top_pil, (0, TOP_SAFE_AREA))
 
     # Text overlay (RGBA, pre-rendered once)
     img_text, layout = create_text_layout(
-        text, VIDEO_WIDTH, BOTTOM_HEIGHT, FONT_SIZE, TEXT_COLOR, title_text=title, align="justify"
+        text, VIDEO_WIDTH, TEXT_AREA_HEIGHT, FONT_SIZE, TEXT_COLOR, title_text=title, align="justify"
     )
     text_rgba = img_text  # Already RGBA PIL Image from create_text_layout
 
@@ -634,14 +634,14 @@ def render_video(
         # 1. Copy full canvas (top image + bottom bg)
         frame = canvas_template.copy()
 
-        # 2. Draw karaoke highlight on bottom section
-        highlight_layer = Image.new("RGBA", (VIDEO_WIDTH, BOTTOM_HEIGHT), (0, 0, 0, 0))
+        # 2. Draw karaoke highlight on text section
+        highlight_layer = Image.new("RGBA", (VIDEO_WIDTH, TEXT_AREA_HEIGHT), (0, 0, 0, 0))
         draw_hl = ImageDraw.Draw(highlight_layer)
         _draw_highlights_on_frame(draw_hl, word_timings, layout, line_bounds, HIGHLIGHT_COLOR, t)
-        frame.paste(highlight_layer, (0, TOP_HEIGHT), mask=highlight_layer)
+        frame.paste(highlight_layer, (0, TEXT_AREA_START_Y), mask=highlight_layer)
 
         # 3. Paste pre-rendered text overlay
-        frame.paste(text_rgba, (0, TOP_HEIGHT), mask=text_rgba)
+        frame.paste(text_rgba, (0, TEXT_AREA_START_Y), mask=text_rgba)
 
         return np.array(frame)
 
